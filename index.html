@@ -14,7 +14,7 @@
       color: #fff;
     }
 
-    /* Background fixed agar tidak ikut zoom */
+    /* Background fixed */
     .bg-fixed {
       position: fixed;
       inset: 0;
@@ -36,7 +36,7 @@
       align-items: center;
     }
 
-    /* Header: judul + jam berdampingan di kanan */
+    /* Header: judul + jam berdampingan */
     .header {
       width: 90%;
       margin-top: 28px;
@@ -46,7 +46,7 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 12px; /* jarak rapat antara judul & jam */
+      gap: 12px;
     }
     .title-badge {
       background: #333;
@@ -57,8 +57,8 @@
       white-space: nowrap;
     }
     .clock-badge {
-      background: #c5aa72;  /* gold */
-      color: #000;          /* teks hitam */
+      background: #c5aa72;
+      color: #000;
       padding: 10px 22px;
       border-radius: 32px;
       font-weight: 800;
@@ -68,30 +68,29 @@
 
     table {
       width: 90%;
-      margin: 48px auto;
+      margin: 36px auto; /* agak lebih rapat */
       border-collapse: separate;
-      border-spacing: 12px 16px;
+      border-spacing: 12px 6px; /* jarak antar baris lebih rapat */
     }
     th {
       background: #c5aa72;
       color: #000;
-      padding: 16px;
+      padding: 14px;
       border-radius: 14px;
       font-size: clamp(18px, 1.6vw, 24px);
       font-weight: 800;
       text-align: center;
     }
     td {
-      background: #333;        /* solid, tidak transparan */
+      background: #333;
       color: #fff;
-      padding: 16px;
+      padding: 12px; /* lebih kecil biar rapat */
       border-radius: 14px;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
     }
-    td:nth-child(3) { text-align: right; } /* ROOM rata kanan */
+    td:nth-child(3) { text-align: right; }
 
-    /* teks event tetap rapi & tidak kepanjangan satu baris */
     .event-text {
       display: inline-block;
       max-width: 60vw;
@@ -129,7 +128,7 @@
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
-    const REFRESH_MS = 5000; // 5 detik
+    const REFRESH_MS = 5000;
     let lastData = [];
 
     // Jam & judul
@@ -143,7 +142,7 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    // Ambil CSV (anti-cache + fallback)
+    // Ambil CSV
     async function loadCSV() {
       try {
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
@@ -158,7 +157,7 @@
       }
     }
 
-    // Parser CSV aman (koma di dalam "...")
+    // Parser CSV
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       return lines.map(line =>
