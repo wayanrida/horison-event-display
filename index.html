@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Horison Lampung – Event Display</title>
   <style>
     body, html { margin:0; height:100%; background:#000; font-family: Arial, sans-serif; }
@@ -59,4 +58,74 @@
       <img class="bg" src="background-1920x1080.png" alt="bg"/>
 
       <div class="header-date" id="headerDate">EVENT HARI INI</div>
-      <div class="clock"
+      <div class="clock" id="clock">00:00:00</div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="th">TIME</div>
+          <div class="th">EVENT</div>
+          <div class="th">ROOM</div>
+        </div>
+        <div class="table-body" id="rows"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
+  const REFRESH_MS = 30000;
+  let lastData = [];
+
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    return lines.map(line => {
+      // hapus tanda kutip di awal/akhir kalau ada
+      line = line.replace(/^"|"$/g, "");
+      const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // split koma tapi aman untuk kutipan
+      return parts.map(p => p.replace(/^"|"$/g,"").trim());
+    });
+  }
+
+  function renderRows(data){
+    const wrap=document.getElementById("rows");
+    wrap.innerHTML='';
+    data.forEach(([time,event,room])=>{
+      const row=document.createElement("div");
+      row.className="row";
+      row.innerHTML=`
+        <div class="cell">${time||""}</div>
+        <div class="cell">${event||""}</div>
+        <div class="cell is-room">${room||""}</div>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  async function loadAndRender(){
+    try {
+      const resp=await fetch(CSV_URL+"&_ts="+Date.now(),{cache:"no-store"});
+      const text=await resp.text();
+      const rows=parseCSV(text);
+      const body=rows.slice(1).filter(r=>(r[0]||r[1]||r[2]));
+      if(body.length>0){ lastData=body; }
+      renderRows(lastData);
+      const opts={day:"2-digit",month:"long",year:"numeric"};
+      document.getElementById("headerDate").textContent="EVENT "+new Date().toLocaleDateString("id-ID",opts).toUpperCase();
+    } catch(e){
+      console.error("Fetch gagal:",e);
+      renderRows(lastData);
+    }
+  }
+
+  function tickClock(){
+    const now=new Date();
+    const opts={hour:"2-digit",minute:"2-digit",second:"2-digit"};
+    document.getElementById("clock").textContent=now.toLocaleTimeString("id-ID",opts);
+  }
+
+  loadAndRender();
+  setInterval(loadAndRender,REFRESH_MS);
+  tickClock();
+  setInterval(tickClock,1000);
+</script>
+</body>
+</html>
