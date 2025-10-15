@@ -23,8 +23,20 @@
       object-fit: cover;
       z-index: 0;
       pointer-events: none;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.8s ease;
     }
-    .hidden { display: none; }
+
+    /* Smooth fade */
+    .fade-out {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .fade-in {
+      opacity: 1;
+      visibility: visible;
+    }
 
     /* Konten */
     .stage {
@@ -35,6 +47,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      transition: opacity 0.8s ease;
     }
 
     /* Header */
@@ -43,6 +56,7 @@
       margin-top: 28px;
       display: flex;
       justify-content: flex-end;
+      transition: opacity 0.8s ease;
     }
     .header-right {
       display: flex;
@@ -72,6 +86,7 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
+      transition: opacity 0.8s ease;
     }
     th {
       background: #c5aa72;
@@ -100,17 +115,38 @@
       white-space: nowrap;
       font-size: clamp(14px, 1.2vw, 22px);
     }
+
+    /* Jam overlay pojok kanan bawah */
+    #clockOverlay {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(18px, 2vw, 28px);
+      padding: 12px 28px;
+      border-radius: 32px;
+      z-index: 2;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #clockOverlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
 </head>
 <body>
   <!-- Background utama -->
-  <img class="bg-fixed" src="background-1920x1080.png" alt="Background">
+  <img class="bg-fixed fade-in" id="bgMain" src="background-1920x1080.png" alt="Background">
   <!-- Background khusus saat tidak ada event -->
-  <img class="bg-fixed hidden" id="bgNoEvent" src="background-noevent.png" alt="No Event">
+  <img class="bg-fixed fade-out" id="bgNoEvent" src="background-noevent.png" alt="No Event">
 
   <!-- Konten -->
   <div class="stage">
-    <div class="header">
+    <div class="header" id="headerTitleBox">
       <div class="header-right">
         <div class="title-badge" id="headerTitle">EVENT HARI INI</div>
         <div class="clock-badge" id="clock">00:00:00</div>
@@ -129,6 +165,9 @@
     </table>
   </div>
 
+  <!-- Jam overlay pojok kanan bawah -->
+  <div id="clockOverlay">00:00:00</div>
+
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
@@ -137,8 +176,9 @@
     // Jam
     function updateClock() {
       const now = new Date();
-      document.getElementById("clock").textContent =
-        now.toLocaleTimeString("id-ID", { hour12: false });
+      const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
+      document.getElementById("clock").textContent = timeStr;
+      document.getElementById("clockOverlay").textContent = timeStr;
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -156,15 +196,35 @@
           document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
         }
 
-        // 🔹 B1 = Status (Ada Event / Tidak Ada Event)
+        // 🔹 B1 = Status
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
 
         if (eventStatus === "tidak ada event") {
-          document.getElementById("bgNoEvent").classList.remove("hidden");
-          document.getElementById("eventTable").style.display = "none";
+          // Background
+          document.getElementById("bgMain").classList.add("fade-out");
+          document.getElementById("bgMain").classList.remove("fade-in");
+          document.getElementById("bgNoEvent").classList.add("fade-in");
+          document.getElementById("bgNoEvent").classList.remove("fade-out");
+
+          // Konten hilang
+          document.getElementById("eventTable").style.opacity = "0";
+          document.getElementById("headerTitleBox").style.opacity = "0";
+
+          // Jam overlay tampil
+          document.getElementById("clockOverlay").classList.add("show");
         } else {
-          document.getElementById("bgNoEvent").classList.add("hidden");
-          document.getElementById("eventTable").style.display = "table";
+          // Background
+          document.getElementById("bgMain").classList.add("fade-in");
+          document.getElementById("bgMain").classList.remove("fade-out");
+          document.getElementById("bgNoEvent").classList.add("fade-out");
+          document.getElementById("bgNoEvent").classList.remove("fade-in");
+
+          // Konten tampil
+          document.getElementById("eventTable").style.opacity = "1";
+          document.getElementById("headerTitleBox").style.opacity = "1";
+
+          // Jam overlay hilang
+          document.getElementById("clockOverlay").classList.remove("show");
         }
 
         // 🔹 Data event mulai baris ke-3
@@ -189,7 +249,7 @@
       );
     }
 
-    // Render table tanpa blank
+    // Render table
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
       const fragment = document.createDocumentFragment();
