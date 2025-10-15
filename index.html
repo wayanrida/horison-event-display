@@ -1,137 +1,186 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Display - Horison Lampung</title>
+  <meta charset="UTF-8" />
+  <title>Horison Event Display</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
+    html, body {
       margin: 0;
+      height: 100%;
+      background: #000;
       font-family: Arial, sans-serif;
-      background: url('background-1920x1080.png') no-repeat center center fixed;
-      background-size: cover;
       overflow: hidden;
+      color: #fff;
     }
 
-    .header {
+    /* Background fixed agar tidak ikut zoom */
+    .bg-fixed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Konten */
+    .stage {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
-      padding: 20px 40px 0 40px;
     }
 
-    .logo {
-      height: 90px;
+    /* Header: judul + jam berdampingan di kanan */
+    .header {
+      width: 90%;
+      margin-top: 28px;
+      display: flex;
+      justify-content: flex-end;
     }
-
-    .title {
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px; /* jarak rapat antara judul & jam */
+    }
+    .title-badge {
       background: #333;
-      color: white;
-      font-weight: bold;
-      padding: 12px 40px;
-      border-radius: 40px;
-      font-size: clamp(18px, 2vw, 28px);
+      padding: 10px 28px;
+      border-radius: 32px;
+      font-weight: 800;
+      font-size: clamp(18px, 1.8vw, 28px);
+      white-space: nowrap;
     }
-
-    .clock {
-      background: #c5aa72;
-      color: black;
-      font-weight: bold;
-      padding: 12px 25px;
-      border-radius: 40px;
-      font-size: clamp(16px, 1.8vw, 24px);
+    .clock-badge {
+      background: #c5aa72;  /* gold */
+      color: #000;          /* teks hitam */
+      padding: 10px 22px;
+      border-radius: 32px;
+      font-weight: 800;
+      font-size: clamp(16px, 1.8vw, 26px);
+      white-space: nowrap;
     }
 
     table {
       width: 90%;
-      margin: 40px auto;
+      margin: 48px auto;
       border-collapse: separate;
       border-spacing: 12px 16px;
     }
-
     th {
       background: #c5aa72;
-      color: black;
-      padding: 15px;
-      border-radius: 12px;
-      font-size: clamp(18px, 1.8vw, 24px);
-      font-weight: bold;
+      color: #000;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: clamp(18px, 1.6vw, 24px);
+      font-weight: 800;
       text-align: center;
     }
-
     td {
-      background: #333; /* solid dark, no transparency */
-      color: white;
-      padding: 15px;
-      border-radius: 12px;
-      font-size: clamp(16px, 1.4vw, 22px);
-      font-weight: bold;
+      background: #333;        /* solid, tidak transparan */
+      color: #fff;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: clamp(16px, 1.3vw, 22px);
+      font-weight: 700;
     }
+    td:nth-child(3) { text-align: right; } /* ROOM rata kanan */
 
-    td:nth-child(3) {
-      text-align: right; /* rata kanan untuk ROOM */
+    /* teks event tetap rapi & tidak kepanjangan satu baris */
+    .event-text {
+      display: inline-block;
+      max-width: 60vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(14px, 1.2vw, 22px);
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="logo.png" alt="Logo Horison" class="logo">
-    <div class="title" id="eventTitle">EVENT HARI INI</div>
-    <div class="clock" id="clock">00:00:00</div>
-  </div>
+  <!-- Background -->
+  <img class="bg-fixed" src="background-1920x1080.png" alt="Background">
 
-  <table id="eventTable">
-    <thead>
-      <tr>
-        <th>TIME</th>
-        <th>EVENT</th>
-        <th>ROOM</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- Konten -->
+  <div class="stage">
+    <div class="header">
+      <div class="header-right">
+        <div class="title-badge" id="headerTitle">EVENT HARI INI</div>
+        <div class="clock-badge" id="clock">00:00:00</div>
+      </div>
+    </div>
+
+    <table id="eventTable">
+      <thead>
+        <tr>
+          <th>TIME</th>
+          <th>EVENT</th>
+          <th>ROOM</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
+    const REFRESH_MS = 5000; // 5 detik
+    let lastData = [];
 
+    // Jam & judul
     function updateClock() {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
-      document.getElementById("clock").textContent = timeStr;
-
-      const dateStr = now.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
-      document.getElementById("eventTitle").textContent = "EVENT " + dateStr.toUpperCase();
+      document.getElementById("clock").textContent =
+        now.toLocaleTimeString("id-ID", { hour12: false });
+      document.getElementById("headerTitle").textContent =
+        "EVENT " + now.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
     }
+    updateClock();
+    setInterval(updateClock, 1000);
 
+    // Ambil CSV (anti-cache + fallback)
     async function loadCSV() {
       try {
-        const response = await fetch(CSV_URL + "&_t=" + new Date().getTime(), { cache: "no-store" });
-        const text = await response.text();
-        const rows = text.trim().split("\n").map(r => r.split(","));
-        const tbody = document.querySelector("#eventTable tbody");
-        tbody.innerHTML = "";
-
-        for (let i = 1; i < rows.length; i++) {
-          const [time, event, room] = rows[i];
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${time}</td>
-            <td>${event}</td>
-            <td>${room}</td>
-          `;
-          tbody.appendChild(tr);
-        }
-      } catch (err) {
-        console.error("Gagal load CSV", err);
+        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
+        const text = await resp.text();
+        const rows = parseCSV(text);
+        const body = rows.slice(1).filter(r => (r[0] || r[1] || r[2]));
+        if (body.length > 0) lastData = body;
+        renderTable(lastData);
+      } catch (e) {
+        console.error("Fetch gagal, pakai data lama:", e);
+        renderTable(lastData);
       }
     }
 
-    setInterval(updateClock, 1000);
-    updateClock();
+    // Parser CSV aman (koma di dalam "...")
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map(line =>
+        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
+      );
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector("#eventTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(([time, event, room]) => {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");  tdTime.textContent = time || "";
+        const tdEvent = document.createElement("td"); tdEvent.innerHTML = `<span class="event-text">${event || ""}</span>`;
+        const tdRoom = document.createElement("td");  tdRoom.textContent = room || "";
+        tr.appendChild(tdTime); tr.appendChild(tdEvent); tr.appendChild(tdRoom);
+        tbody.appendChild(tr);
+      });
+    }
 
     loadCSV();
-    setInterval(loadCSV, 5000); // refresh setiap 5 detik
+    setInterval(loadCSV, REFRESH_MS);
   </script>
 </body>
 </html>
