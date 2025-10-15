@@ -68,9 +68,9 @@
 
     table {
       width: 90%;
-      margin: 36px auto; /* agak lebih rapat */
+      margin: 36px auto;
       border-collapse: separate;
-      border-spacing: 12px 6px; /* jarak antar baris lebih rapat */
+      border-spacing: 12px 6px; /* lebih rapat */
     }
     th {
       background: #c5aa72;
@@ -84,7 +84,7 @@
     td {
       background: #333;
       color: #fff;
-      padding: 12px; /* lebih kecil biar rapat */
+      padding: 12px;
       border-radius: 14px;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
@@ -131,13 +131,11 @@
     const REFRESH_MS = 5000;
     let lastData = [];
 
-    // Jam & judul
+    // Jam (hanya jam, tidak untuk judul lagi)
     function updateClock() {
       const now = new Date();
       document.getElementById("clock").textContent =
         now.toLocaleTimeString("id-ID", { hour12: false });
-      document.getElementById("headerTitle").textContent =
-        "EVENT " + now.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -148,7 +146,15 @@
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
         const text = await resp.text();
         const rows = parseCSV(text);
-        const body = rows.slice(1).filter(r => (r[0] || r[1] || r[2]));
+
+        // 🔹 Ambil judul dari sel A1 (rows[0][0])
+        const customTitle = rows[0][0];
+        if (customTitle) {
+          document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
+        }
+
+        // 🔹 Data event mulai baris ke-3 (skip row 0 judul, row 1 header kolom)
+        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
         if (body.length > 0) lastData = body;
         renderTable(lastData);
       } catch (e) {
