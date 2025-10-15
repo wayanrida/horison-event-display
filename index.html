@@ -24,6 +24,7 @@
       z-index: 0;
       pointer-events: none;
     }
+    .hidden { display: none; }
 
     /* Konten */
     .stage {
@@ -36,7 +37,7 @@
       align-items: center;
     }
 
-    /* Header: judul + jam berdampingan */
+    /* Header */
     .header {
       width: 90%;
       margin-top: 28px;
@@ -70,7 +71,7 @@
       width: 90%;
       margin: 36px auto;
       border-collapse: separate;
-      border-spacing: 12px 6px; /* lebih rapat */
+      border-spacing: 12px 6px;
     }
     th {
       background: #c5aa72;
@@ -102,8 +103,10 @@
   </style>
 </head>
 <body>
-  <!-- Background -->
+  <!-- Background utama -->
   <img class="bg-fixed" src="background-1920x1080.png" alt="Background">
+  <!-- Background khusus saat tidak ada event -->
+  <img class="bg-fixed hidden" id="bgNoEvent" src="background-noevent.png" alt="No Event">
 
   <!-- Konten -->
   <div class="stage">
@@ -147,23 +150,34 @@
         const text = await resp.text();
         const rows = parseCSV(text);
 
-        // 🔹 Ambil judul dari sel A1 (rows[0][0])
+        // 🔹 A1 = Judul
         const customTitle = rows[0][0];
         if (customTitle) {
           document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
         }
 
-        // 🔹 Data event mulai baris ke-3 (skip row 0 judul, row 1 header kolom)
+        // 🔹 B1 = Status (Ada Event / Tidak Ada Event)
+        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
+
+        if (eventStatus === "tidak ada event") {
+          document.getElementById("bgNoEvent").classList.remove("hidden");
+          document.getElementById("eventTable").style.display = "none";
+        } else {
+          document.getElementById("bgNoEvent").classList.add("hidden");
+          document.getElementById("eventTable").style.display = "table";
+        }
+
+        // 🔹 Data event mulai baris ke-3
         const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
         if (body.length > 0) {
-          lastData = body;       // simpan data terbaru
-          renderTable(lastData); // tampilkan data baru
+          lastData = body;
+          renderTable(lastData);
         } else {
-          renderTable(lastData); // kalau kosong, tetap pakai data lama
+          renderTable(lastData);
         }
       } catch (e) {
         console.error("Fetch gagal, pakai data lama:", e);
-        renderTable(lastData); // kalau gagal, tetap tampil data lama
+        renderTable(lastData);
       }
     }
 
@@ -175,17 +189,31 @@
       );
     }
 
+    // Render table tanpa blank
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
-      tbody.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+
       data.forEach(([time, event, room]) => {
         const tr = document.createElement("tr");
-        const tdTime = document.createElement("td");  tdTime.textContent = time || "";
-        const tdEvent = document.createElement("td"); tdEvent.innerHTML = `<span class="event-text">${event || ""}</span>`;
-        const tdRoom = document.createElement("td");  tdRoom.textContent = room || "";
-        tr.appendChild(tdTime); tr.appendChild(tdEvent); tr.appendChild(tdRoom);
-        tbody.appendChild(tr);
+
+        const tdTime = document.createElement("td");
+        tdTime.textContent = time || "";
+
+        const tdEvent = document.createElement("td");
+        tdEvent.innerHTML = `<span class="event-text">${event || ""}</span>`;
+
+        const tdRoom = document.createElement("td");
+        tdRoom.textContent = room || "";
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdEvent);
+        tr.appendChild(tdRoom);
+
+        fragment.appendChild(tr);
       });
+
+      tbody.replaceChildren(fragment);
     }
 
     loadCSV();
