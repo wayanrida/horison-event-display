@@ -131,7 +131,7 @@
     const REFRESH_MS = 5000;
     let lastData = [];
 
-    // Jam (hanya jam, tidak untuk judul lagi)
+    // Jam
     function updateClock() {
       const now = new Date();
       document.getElementById("clock").textContent =
@@ -155,11 +155,15 @@
 
         // 🔹 Data event mulai baris ke-3 (skip row 0 judul, row 1 header kolom)
         const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-        if (body.length > 0) lastData = body;
-        renderTable(lastData);
+        if (body.length > 0) {
+          lastData = body;       // simpan data terbaru
+          renderTable(lastData); // tampilkan data baru
+        } else {
+          renderTable(lastData); // kalau kosong, tetap pakai data lama
+        }
       } catch (e) {
         console.error("Fetch gagal, pakai data lama:", e);
-        renderTable(lastData);
+        renderTable(lastData); // kalau gagal, tetap tampil data lama
       }
     }
 
