@@ -18,17 +18,27 @@
       align-items: center;
       padding: 20px 40px;
     }
+    .header-left {
+      flex: 1;
+      text-align: left;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
     .header-title {
       background: #333;
-      padding: 10px 40px;
+      padding: 10px 25px;
       border-radius: 30px;
-      font-size: clamp(20px, 2vw, 36px);
+      font-size: clamp(16px, 1.8vw, 32px);
       font-weight: bold;
-      margin-left: 250px; /* geser kanan biar sejajar logo */
+      white-space: nowrap;
     }
     .clock {
       font-size: clamp(16px, 2vw, 28px);
       font-weight: bold;
+      white-space: nowrap;
     }
     table {
       width: 90%;
@@ -65,8 +75,13 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-title" id="headerTitle">EVENT HARI INI</div>
-    <div class="clock" id="clock">00:00:00</div>
+    <div class="header-left">
+      <!-- Logo bisa ditempatkan di sini jika mau -->
+    </div>
+    <div class="header-right">
+      <div class="header-title" id="headerTitle">EVENT HARI INI</div>
+      <div class="clock" id="clock">00:00:00</div>
+    </div>
   </div>
 
   <table id="eventTable">
@@ -115,7 +130,6 @@
 
       rows.slice(1).forEach(row => {
         const [time, event, room] = row;
-
         if (!time || !event || !room) return;
 
         const tr = document.createElement("tr");
