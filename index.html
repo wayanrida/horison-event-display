@@ -40,41 +40,35 @@
       background: rgba(0, 0, 0, 0.7);
       padding: 20px;
       border-radius: 12px;
+      width: 80%;
     }
     table {
       border-collapse: collapse;
       width: 100%;
-      font-size: 24px;
+      font-size: 22px;
       text-align: center;
     }
     th, td {
       padding: 15px 20px;
       border: none;
-      background: #111;
       border-radius: 10px;
     }
     th {
       background: transparent;
-      font-size: 26px;
+      font-size: 24px;
     }
     td {
       background: #222;
       color: #fff;
       font-weight: bold;
     }
-    /* Animasi marquee */
-    .marquee {
-      display: inline-block;
-      white-space: nowrap;
-      animation: scroll-text 10s linear infinite;
-    }
-    @keyframes scroll-text {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    .scroll-container {
-      overflow: hidden;
-      width: 100%;
+    /* clamp untuk teks event */
+    .event-text {
+      display: block;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+      font-size: clamp(14px, 2vw, 22px); /* otomatis mengecil bila panjang */
     }
   </style>
 </head>
@@ -97,11 +91,9 @@
   </div>
 
   <script>
-    // Link CSV Google Sheets
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
-    const REFRESH_MS = 30000; // refresh tiap 30 detik
+    const REFRESH_MS = 30000;
 
-    // Jam realtime
     function updateClock() {
       const now = new Date();
       const h = String(now.getHours()).padStart(2, '0');
@@ -112,7 +104,6 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Tanggal header
     function updateDateHeader() {
       const now = new Date();
       const options = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -121,7 +112,6 @@
     }
     updateDateHeader();
 
-    // Ambil CSV dari Google Sheets
     async function loadCSV() {
       try {
         const response = await fetch(CSV_URL);
@@ -132,7 +122,6 @@
       }
     }
 
-    // Render isi tabel
     function renderTable(csv) {
       const rows = csv.trim().split("\n").map(r => r.split(","));
       const tbody = document.querySelector("#eventTable tbody");
@@ -141,7 +130,6 @@
       rows.slice(1).forEach(row => {
         const [time, event, room, date] = row;
 
-        // filter hanya untuk hari ini
         const today = new Date().toLocaleDateString('id-ID');
         if (date && date !== today) return;
 
@@ -150,25 +138,4 @@
         const tdTime = document.createElement("td");
         tdTime.textContent = time;
 
-        const tdEvent = document.createElement("td");
-        if (event.length > 25) {
-          tdEvent.innerHTML = `<div class="scroll-container"><div class="marquee">${event}</div></div>`;
-        } else {
-          tdEvent.textContent = event;
-        }
-
-        const tdRoom = document.createElement("td");
-        tdRoom.textContent = room;
-
-        tr.appendChild(tdTime);
-        tr.appendChild(tdEvent);
-        tr.appendChild(tdRoom);
-        tbody.appendChild(tr);
-      });
-    }
-
-    loadCSV();
-    setInterval(loadCSV, REFRESH_MS);
-  </script>
-</body>
-</html>
+        const tdEvent =
