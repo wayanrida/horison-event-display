@@ -2,184 +2,136 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Horison Event Display</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Display - Horison Lampung</title>
   <style>
-    body, html {
+    body {
       margin: 0;
-      height: 100%;
-      background: #000;
       font-family: Arial, sans-serif;
+      background: url('background-1920x1080.png') no-repeat center center fixed;
+      background-size: cover;
       overflow: hidden;
     }
 
-    /* Background tetap (tidak ikut zoom) */
-    .bg-fixed {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    /* Konten di atas background */
-    .stage {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
     .header {
-      width: 90%;
-      margin-top: 30px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
-      gap: 15px;
+      padding: 20px 40px 0 40px;
     }
-    .header-title {
+
+    .logo {
+      height: 90px;
+    }
+
+    .title {
       background: #333;
-      color: #fff;
-      padding: 10px 30px;
-      border-radius: 30px;
-      font-size: clamp(18px, 1.8vw, 32px);
+      color: white;
       font-weight: bold;
+      padding: 12px 40px;
+      border-radius: 40px;
+      font-size: clamp(18px, 2vw, 28px);
     }
+
     .clock {
       background: #c5aa72;
       color: black;
-      padding: 10px 25px;
-      border-radius: 30px;
-      font-size: clamp(18px, 2vw, 28px);
       font-weight: bold;
+      padding: 12px 25px;
+      border-radius: 40px;
+      font-size: clamp(16px, 1.8vw, 24px);
     }
 
     table {
       width: 90%;
-      margin: 50px auto;
+      margin: 40px auto;
       border-collapse: separate;
-      border-spacing: 12px;
+      border-spacing: 12px 16px;
     }
-    th, td {
-      padding: 15px;
-      border-radius: 12px;
-    }
+
     th {
       background: #c5aa72;
-      color: #000;
-      font-size: clamp(18px, 1.5vw, 28px);
+      color: black;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: clamp(18px, 1.8vw, 24px);
+      font-weight: bold;
+      text-align: center;
     }
+
     td {
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      font-size: clamp(16px, 1.2vw, 24px);
+      background: #333; /* solid dark, no transparency */
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: clamp(16px, 1.4vw, 22px);
       font-weight: bold;
     }
-    .event-text {
-      display: inline-block;
-      max-width: 600px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: clamp(14px, 1.2vw, 22px);
-    }
-    .room-text {
-      text-align: right;
-      display: block;
+
+    td:nth-child(3) {
+      text-align: right; /* rata kanan untuk ROOM */
     }
   </style>
 </head>
 <body>
-  <!-- Background tetap -->
-  <img class="bg-fixed" src="background-1920x1080.png" alt="Background">
-
-  <!-- Konten -->
-  <div class="stage">
-    <div class="header">
-      <div class="header-title" id="headerTitle">EVENT HARI INI</div>
-      <div class="clock" id="clock">00:00:00</div>
-    </div>
-
-    <table id="eventTable">
-      <thead>
-        <tr>
-          <th>TIME</th>
-          <th>EVENT</th>
-          <th>ROOM</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="header">
+    <img src="logo.png" alt="Logo Horison" class="logo">
+    <div class="title" id="eventTitle">EVENT HARI INI</div>
+    <div class="clock" id="clock">00:00:00</div>
   </div>
+
+  <table id="eventTable">
+    <thead>
+      <tr>
+        <th>TIME</th>
+        <th>EVENT</th>
+        <th>ROOM</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
-    const REFRESH_MS = 5000; // refresh tiap 5 detik
-    let lastData = [];
 
-    // Update clock + header
     function updateClock() {
       const now = new Date();
-      document.getElementById("clock").textContent =
-        now.toLocaleTimeString("id-ID", { hour12: false });
-      document.getElementById("headerTitle").textContent =
-        "EVENT " + now.toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
+      const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
+      document.getElementById("clock").textContent = timeStr;
 
-    // Ambil CSV
+      const dateStr = now.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+      document.getElementById("eventTitle").textContent = "EVENT " + dateStr.toUpperCase();
+    }
+
     async function loadCSV() {
       try {
-        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
-        const text = await resp.text();
-        const rows = parseCSV(text);
-        const body = rows.slice(1).filter(r => (r[0] || r[1] || r[2]));
-        if (body.length > 0) lastData = body;
-        renderTable(lastData);
+        const response = await fetch(CSV_URL + "&_t=" + new Date().getTime(), { cache: "no-store" });
+        const text = await response.text();
+        const rows = text.trim().split("\n").map(r => r.split(","));
+        const tbody = document.querySelector("#eventTable tbody");
+        tbody.innerHTML = "";
+
+        for (let i = 1; i < rows.length; i++) {
+          const [time, event, room] = rows[i];
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${time}</td>
+            <td>${event}</td>
+            <td>${room}</td>
+          `;
+          tbody.appendChild(tr);
+        }
       } catch (err) {
-        console.error("Fetch gagal, pakai data lama:", err);
-        renderTable(lastData);
+        console.error("Gagal load CSV", err);
       }
     }
 
-    // Parser CSV aman
-    function parseCSV(text) {
-      const lines = text.trim().split("\n");
-      return lines.map(line =>
-        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g,"").trim())
-      );
-    }
-
-    function renderTable(data) {
-      const tbody = document.querySelector("#eventTable tbody");
-      tbody.innerHTML = "";
-      data.forEach(([time, event, room]) => {
-        const tr = document.createElement("tr");
-
-        const tdTime = document.createElement("td");
-        tdTime.textContent = time;
-
-        const tdEvent = document.createElement("td");
-        tdEvent.innerHTML = `<span class="event-text">${event}</span>`;
-
-        const tdRoom = document.createElement("td");
-        tdRoom.innerHTML = `<span class="room-text">${room}</span>`;
-
-        tr.appendChild(tdTime);
-        tr.appendChild(tdEvent);
-        tr.appendChild(tdRoom);
-        tbody.appendChild(tr);
-      });
-    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
     loadCSV();
-    setInterval(loadCSV, REFRESH_MS);
+    setInterval(loadCSV, 5000); // refresh setiap 5 detik
   </script>
 </body>
 </html>
