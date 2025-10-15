@@ -2,135 +2,120 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Event Hari Ini - Horison Lampung</title>
+  <title>Horison Event Display</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #000;
       color: white;
-      overflow: hidden;
-    }
-    .stage {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-      background: url('background-1920x1080.png') no-repeat center center;
+      text-align: center;
+      background: url("background-1920x1080.png") no-repeat center center fixed;
       background-size: cover;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-    .header-date {
-      margin-top: 30px;
-      padding: 10px 40px;
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+    .header-title {
       background: #333;
-      border-radius: 40px;
-      font-size: 28px;
+      padding: 10px 40px;
+      border-radius: 30px;
+      font-size: clamp(20px, 2vw, 36px);
       font-weight: bold;
     }
     .clock {
-      position: absolute;
-      top: 20px;
-      right: 30px;
-      font-size: 22px;
-    }
-    .table-wrap {
-      margin-top: 80px;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 20px;
-      border-radius: 12px;
-      width: 80%;
+      font-size: clamp(16px, 2vw, 28px);
+      font-weight: bold;
     }
     table {
+      width: 90%;
+      margin: 40px auto;
       border-collapse: collapse;
-      width: 100%;
-      font-size: 22px;
-      text-align: center;
     }
     th, td {
-      padding: 15px 20px;
-      border: none;
+      padding: 15px;
+      background: rgba(0,0,0,0.7);
       border-radius: 10px;
     }
     th {
-      background: transparent;
-      font-size: 24px;
+      font-size: clamp(18px, 1.5vw, 28px);
     }
     td {
-      background: #222;
-      color: #fff;
-      font-weight: bold;
+      font-size: clamp(16px, 1.2vw, 24px);
     }
-    /* clamp untuk teks event */
     .event-text {
-      display: block;
-      white-space: normal;
-      word-break: break-word;
-      text-align: center;
-      font-size: clamp(14px, 2vw, 22px); /* otomatis mengecil bila panjang */
+      display: inline-block;
+      max-width: 500px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: clamp(14px, 1.2vw, 22px);
     }
   </style>
 </head>
 <body>
-  <div class="stage">
+  <div class="header">
+    <div class="header-title" id="headerTitle">EVENT HARI INI</div>
     <div class="clock" id="clock">00:00:00</div>
-    <div class="header-date" id="headerDate">EVENT HARI INI</div>
-    <div class="table-wrap">
-      <table id="eventTable">
-        <thead>
-          <tr>
-            <th>TIME</th>
-            <th>EVENT</th>
-            <th>ROOM</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
   </div>
+
+  <table id="eventTable">
+    <thead>
+      <tr>
+        <th>TIME</th>
+        <th>EVENT</th>
+        <th>ROOM</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 30000;
 
+    // Update clock
     function updateClock() {
       const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById("clock").textContent = `${h}.${m}.${s}`;
+      document.getElementById("clock").textContent =
+        now.toLocaleTimeString("id-ID", { hour12: false });
+      document.getElementById("headerTitle").textContent =
+        "EVENT " + now.toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    function updateDateHeader() {
-      const now = new Date();
-      const options = { day: 'numeric', month: 'long', year: 'numeric' };
-      const tanggal = now.toLocaleDateString('id-ID', options).toUpperCase();
-      document.getElementById("headerDate").textContent = `EVENT ${tanggal}`;
-    }
-    updateDateHeader();
-
     async function loadCSV() {
       try {
         const response = await fetch(CSV_URL);
-        const data = await response.text();
-        renderTable(data);
-      } catch (error) {
-        console.error("Gagal ambil data CSV:", error);
+        const text = await response.text();
+        renderTable(parseCSV(text));
+      } catch (err) {
+        console.error("Gagal ambil CSV:", err);
       }
     }
 
-    function renderTable(csv) {
-      const rows = csv.trim().split("\n").map(r => r.split(","));
+    function parseCSV(text) {
+      const rows = [];
+      const lines = text.trim().split("\n");
+      for (let line of lines) {
+        line = line.replace(/^"|"$/g, "").replace(/","/g, "|");
+        const parts = line.split("|");
+        rows.push(parts);
+      }
+      return rows;
+    }
+
+    function renderTable(rows) {
       const tbody = document.querySelector("#eventTable tbody");
       tbody.innerHTML = "";
 
+      const today = new Date().toLocaleDateString('id-ID');
+
       rows.slice(1).forEach(row => {
         const [time, event, room, date] = row;
-
-        const today = new Date().toLocaleDateString('id-ID');
         if (date && date !== today) return;
 
         const tr = document.createElement("tr");
@@ -138,4 +123,21 @@
         const tdTime = document.createElement("td");
         tdTime.textContent = time;
 
-        const tdEvent =
+        const tdEvent = document.createElement("td");
+        tdEvent.innerHTML = `<span class="event-text">${event}</span>`;
+
+        const tdRoom = document.createElement("td");
+        tdRoom.textContent = room;
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdEvent);
+        tr.appendChild(tdRoom);
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadCSV();
+    setInterval(loadCSV, REFRESH_MS);
+  </script>
+</body>
+</html>
