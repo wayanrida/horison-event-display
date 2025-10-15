@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Horison Lampung – Event Display</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .stage-wrap {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: top left;
+      background: #222;
+    }
+    .bg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+    .header-date {
+      position: absolute;
+      left: 700px;
+      top: 110px;
+      width: 860px;
+      height: 90px;
+      display: grid; place-items: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 44px;
+      text-transform: uppercase;
+    }
+    .table-wrap {
+      position: absolute;
+      left: 250px;
+      right: 250px;
+      top: 350px;
+      bottom: 250px;
+      display: grid;
+      grid-template-rows: 86px 1fr;
+      z-index: 2;
+    }
+    .table-head {
+      display: grid;
+      grid-template-columns: 1.1fr 2.2fr 1.5fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .th {
+      display: grid; place-items: center;
+      font-weight: 800; color: #fff;
+      font-size: 34px; text-transform: uppercase;
+    }
+    .table-body {
+      margin-top: 18px;
+      overflow: hidden;
+      display: grid;
+      grid-auto-rows: 92px;
+      row-gap: 18px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.1fr 2.2fr 1.5fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .cell {
+      display: grid; place-items: center;
+      padding: 0 24px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #2f2f31 0%, #1f1f21 100%);
+      color: #fff;
+      font-size: 32px;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 0 0 3px rgba(201,167,82,.9);
+    }
+    .clock {
+      position: absolute;
+      right: 50px; top: 40px;
+      color: #fff; font-weight: 700; font-size: 28px;
+      text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    @media (min-aspect-ratio: 16/9) {
+      .stage { transform: scale(calc(100vh / 1080)); }
+    }
+    @media (max-aspect-ratio: 16/9) {
+      .stage { transform: scale(calc(100vw / 1920)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage-wrap">
+    <div class="stage">
+      <img class="bg" src="background-1920x1080.png" alt="Background" />
+      <div class="clock" id="clock"></div>
+      <div class="header-date" id="headerDate">EVENT HARI INI</div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="th">Time</div>
+          <div class="th">Event</div>
+          <div class="th">Room</div>
+        </div>
+        <div class="table-body" id="rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIG ===
+    const PUBLISHED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
+    const REFRESH_MS = 30000;
+
+    function csvToRows(csv) {
+      const lines = csv.split(/\r?\n/).filter(Boolean);
+      return lines.map(line => line.split(","));
+    }
+    function formatHeaderDate(date = new Date()) {
+      const opts = { day: '2-digit', month: 'long', year: 'numeric' };
+      return "EVENT " + date.toLocaleDateString('id-ID', opts).toUpperCase();
+    }
+    function tickClock(){
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString('id-ID');
+    }
+    async function loadAndRender(){
+      try {
+        const resp = await fetch(PUBLISHED_CSV_URL, { cache: 'no-store' });
+        const csv = await resp.text();
+        const rows = csvToRows(csv);
+        const body = rows.slice(1).filter(r => (r[0]||r[1]||r[2]));
+        renderRows(body);
+        document.getElementById('headerDate').textContent = formatHeaderDate();
+      } catch (e) {
+        console.error("Gagal load CSV", e);
+      }
+    }
+    function renderRows(data){
+      const wrap = document.getElementById('rows');
+      wrap.innerHTML = '';
+      data.forEach(item => {
+        const [time, eventName, room] = item;
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div class="cell">${time || ''}</div>
+          <div class="cell">${(eventName || '').toUpperCase()}</div>
+          <div class="cell">${(room || '').toUpperCase()}</div>
+        `;
+        wrap.appendChild(row);
+      });
+    }
+    loadAndRender();
+    setInterval(loadAndRender, REFRESH_MS);
+    tickClock();
+    setInterval(tickClock, 1000);
+  </script>
+</body>
+</html>
