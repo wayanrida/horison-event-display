@@ -228,6 +228,33 @@
       }, 2500);
     }
 
+    function normalizeTime(str) {
+      if (!str) return "";
+      let clean = str.replace(/[;:]/g, ".").trim();
+      let parts = clean.split("-").map(p => p.trim());
+
+      function formatPart(p) {
+        if (!p) return "";
+        // Hanya angka → tambahkan .00
+        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
+        // Format jam valid HH.MM
+        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
+          let [h, m] = p.split(".");
+          return h.padStart(2, "0") + "." + m.padStart(2, "0");
+        }
+        // Format jam valid HH.
+        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
+        // Kalau tidak valid → tampilkan apa adanya
+        return p;
+      }
+
+      if (parts.length === 2) {
+        return formatPart(parts[0]) + " - " + formatPart(parts[1]);
+      } else {
+        return formatPart(parts[0]);
+      }
+    }
+
     async function loadCSV() {
       try {
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
@@ -253,7 +280,6 @@
         // 🔹 B1 = Status Ada/Tidak Ada Event
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
 
-        // Tampilkan notice jika status berubah
         if (eventStatus !== lastStatus && lastStatus !== "") {
           showUpdatingNotice();
         }
@@ -298,7 +324,7 @@
         const tr = document.createElement("tr");
 
         const tdTime = document.createElement("td");
-        tdTime.textContent = time || "";
+        tdTime.textContent = normalizeTime(time);
 
         const tdEvent = document.createElement("td");
         tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
