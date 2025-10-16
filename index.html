@@ -25,8 +25,8 @@
       transition: opacity 0.8s ease;
     }
 
-    #bgMain { z-index: 0; }   /* video paling bawah */
-    .overlay { z-index: 1; }  /* PNG overlay di atas video */
+    #bgMain { z-index: 0; }
+    .overlay { z-index: 1; }
 
     /* Background No Event */
     #bgNoEvent {
@@ -200,29 +200,26 @@
         const text = await resp.text();
         const rows = parseCSV(text);
 
+        // 🔹 A1 = Judul → auto uppercase
         const customTitle = rows[0][0];
         if (customTitle) {
           document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
         }
 
+        // 🔹 B1 = Status
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
 
         if (eventStatus === "tidak ada event") {
-          // Sembunyikan konten utama
           document.getElementById("mainStage").style.opacity = "0";
-          // Munculkan background No Event
           document.getElementById("bgNoEvent").classList.add("show");
-          // Tampilkan jam overlay
           document.getElementById("clockOverlay").classList.add("show");
         } else {
-          // Tampilkan konten utama
           document.getElementById("mainStage").style.opacity = "1";
-          // Sembunyikan background No Event
           document.getElementById("bgNoEvent").classList.remove("show");
-          // Hilangkan jam overlay
           document.getElementById("clockOverlay").classList.remove("show");
         }
 
+        // 🔹 Data event mulai baris ke-3
         const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
         if (body.length > 0) {
           lastData = body;
@@ -254,7 +251,7 @@
         tdTime.textContent = time || "";
 
         const tdEvent = document.createElement("td");
-        tdEvent.innerHTML = `<span class="event-text">${event || ""}</span>`;
+        tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
 
         const tdRoom = document.createElement("td");
         tdRoom.textContent = room || "";
