@@ -200,13 +200,25 @@
         const text = await resp.text();
         const rows = parseCSV(text);
 
-        // 🔹 A1 = Judul → auto uppercase
+        // 🔹 A1 = Judul (bisa tanggal)
         const customTitle = rows[0][0];
         if (customTitle) {
-          document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
+          const date = new Date(customTitle);
+          if (!isNaN(date)) {
+            // Format tanggal jadi EVENT 18 OCTOBER 2025
+            const formatted = date.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric"
+            });
+            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
+          } else {
+            // fallback kalau A1 bukan tanggal
+            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
+          }
         }
 
-        // 🔹 B1 = Status
+        // 🔹 B1 = Status Ada/Tidak Ada Event
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
 
         if (eventStatus === "tidak ada event") {
