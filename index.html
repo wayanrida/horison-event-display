@@ -14,30 +14,31 @@
       color: #fff;
     }
 
+    /* Background video & overlay */
     .bg-fixed {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      z-index: 0;
+      object-fit: cover;   /* Fit fullscreen (16:9) */
       pointer-events: none;
-      transition: opacity 0.8s ease;
     }
-    .fade-out { opacity: 0; visibility: hidden; }
-    .fade-in { opacity: 1; visibility: visible; }
 
+    #bgMain { z-index: 0; }   /* video paling bawah */
+    .overlay { z-index: 1; }  /* PNG overlay di atas video */
+
+    /* Konten utama */
     .stage {
       position: relative;
-      z-index: 1;
+      z-index: 2; /* di atas video & overlay */
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: opacity 0.8s ease;
     }
 
+    /* Header */
     .header {
       width: 90%;
       margin-top: 28px;
@@ -68,6 +69,7 @@
       white-space: nowrap;
     }
 
+    /* Tabel */
     table {
       width: 90%;
       margin: 36px auto;
@@ -92,7 +94,11 @@
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
     }
-    td:nth-child(3) { text-align: right; }
+
+    /* Alignment kolom */
+    td:nth-child(1) { text-align: center; } /* TIME rata tengah */
+    td:nth-child(2) { text-align: left; }   /* EVENT rata kiri */
+    td:nth-child(3) { text-align: right; }  /* ROOM rata kanan */
 
     .event-text {
       display: inline-block;
@@ -103,6 +109,7 @@
       font-size: clamp(14px, 1.2vw, 22px);
     }
 
+    /* Jam overlay */
     #clockOverlay {
       position: fixed;
       bottom: 20px;
@@ -113,7 +120,7 @@
       font-size: clamp(18px, 2vw, 28px);
       padding: 12px 28px;
       border-radius: 32px;
-      z-index: 2;
+      z-index: 3;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.8s ease;
@@ -125,10 +132,13 @@
   </style>
 </head>
 <body>
-  <!-- Background utama -->
-  <img class="bg-fixed fade-in" id="bgMain" src="background-1920x1080.png" alt="Background">
-  <!-- Background khusus saat tidak ada event -->
-  <img class="bg-fixed fade-out" id="bgNoEvent" src="background-noevent.png" alt="No Event">
+  <!-- Video background -->
+  <video class="bg-fixed" id="bgMain" autoplay muted loop playsinline>
+    <source src="VideoLooping.mp4" type="video/mp4">
+  </video>
+
+  <!-- PNG overlay -->
+  <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
   <!-- Konten -->
   <div class="stage">
@@ -158,9 +168,7 @@
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
     let lastData = [];
-    let debounceTimer = null; // timer untuk debounce
 
-    // Jam
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
@@ -170,63 +178,42 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    // Ambil CSV
     async function loadCSV() {
       try {
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
         const text = await resp.text();
         const rows = parseCSV(text);
 
-        // Simpan data sementara
-        const updateData = () => {
-          // 🔹 A1 = Judul
-          const customTitle = rows[0][0];
-          if (customTitle) {
-            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
-          }
+        const customTitle = rows[0][0];
+        if (customTitle) {
+          document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
+        }
 
-          // 🔹 B1 = Status
-          const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
+        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
 
-          if (eventStatus === "tidak ada event") {
-            document.getElementById("bgMain").classList.replace("fade-in", "fade-out");
-            document.getElementById("bgNoEvent").classList.replace("fade-out", "fade-in");
+        if (eventStatus === "tidak ada event") {
+          document.getElementById("eventTable").style.opacity = "0";
+          document.getElementById("headerTitleBox").style.opacity = "0";
+          document.getElementById("clockOverlay").classList.add("show");
+        } else {
+          document.getElementById("eventTable").style.opacity = "1";
+          document.getElementById("headerTitleBox").style.opacity = "1";
+          document.getElementById("clockOverlay").classList.remove("show");
+        }
 
-            document.getElementById("eventTable").style.opacity = "0";
-            document.getElementById("headerTitleBox").style.opacity = "0";
-
-            document.getElementById("clockOverlay").classList.add("show");
-          } else {
-            document.getElementById("bgMain").classList.replace("fade-out", "fade-in");
-            document.getElementById("bgNoEvent").classList.replace("fade-in", "fade-out");
-
-            document.getElementById("eventTable").style.opacity = "1";
-            document.getElementById("headerTitleBox").style.opacity = "1";
-
-            document.getElementById("clockOverlay").classList.remove("show");
-          }
-
-          // 🔹 Data event mulai baris ke-3
-          const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-          if (body.length > 0) {
-            lastData = body;
-            renderTable(lastData);
-          } else {
-            renderTable(lastData);
-          }
-        };
-
-        // Pakai debounce 250ms
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(updateData, 250);
-
+        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+        if (body.length > 0) {
+          lastData = body;
+          renderTable(lastData);
+        } else {
+          renderTable(lastData);
+        }
       } catch (e) {
         console.error("Fetch gagal, pakai data lama:", e);
         renderTable(lastData);
       }
     }
 
-    // Parser CSV
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       return lines.map(line =>
@@ -234,7 +221,6 @@
       );
     }
 
-    // Render table
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
       const fragment = document.createDocumentFragment();
