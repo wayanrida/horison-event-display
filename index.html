@@ -33,8 +33,21 @@
       z-index: 10;
       opacity: 0;
       visibility: hidden;
+      transition: opacity 0.8s ease;
     }
     #bgNoEvent.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Screensaver */
+    #bgScreensaver {
+      z-index: 11;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1.2s ease;
+    }
+    #bgScreensaver.show {
       opacity: 1;
       visibility: visible;
     }
@@ -57,7 +70,6 @@
       margin-top: 28px;
       display: flex;
       justify-content: flex-end;
-      transition: opacity 0.8s ease;
     }
     .header-right {
       display: flex;
@@ -88,7 +100,6 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      transition: opacity 0.8s ease;
     }
     th {
       background: #c5aa72;
@@ -107,11 +118,9 @@
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
     }
-
-    /* Alignment kolom */
-    td:nth-child(1) { text-align: center; } /* TIME rata tengah */
-    td:nth-child(2) { text-align: left; }   /* EVENT rata kiri */
-    td:nth-child(3) { text-align: right; }  /* ROOM rata kanan */
+    td:nth-child(1) { text-align: center; }
+    td:nth-child(2) { text-align: left; }
+    td:nth-child(3) { text-align: right; }
 
     .event-text {
       display: inline-block;
@@ -119,28 +128,33 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: clamp(14px, 1.2vw, 22px);
     }
 
-    /* Jam overlay */
-    #clockOverlay {
+    /* Screensaver Info (atas kanan) */
+    #screensaverInfo {
       position: fixed;
-      bottom: 20px;
+      top: 28px;
       right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 21;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1.2s ease;
+    }
+    #screensaverInfo.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #screensaverText,
+    #clockOverlay {
       background: #fff;
       color: #000;
       font-weight: 800;
-      font-size: clamp(18px, 2vw, 28px);
-      padding: 12px 28px;
       border-radius: 32px;
-      z-index: 20;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease;
-    }
-    #clockOverlay.show {
-      opacity: 1;
-      visibility: visible;
+      padding: 10px 24px;
     }
 
     /* Notice Updating */
@@ -172,21 +186,21 @@
     <source src="VideoLooping.mp4" type="video/mp4">
   </video>
 
-  <!-- PNG overlay -->
+  <!-- Overlay PNG -->
   <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
-  <!-- Background khusus saat Tidak Ada Event -->
-  <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
+  <!-- Background khusus -->
+  <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event">
+  <img class="bg-fixed" id="bgScreensaver" src="screensaver.png" alt="Screensaver">
 
   <!-- Konten -->
   <div class="stage" id="mainStage">
-    <div class="header" id="headerTitleBox">
+    <div class="header">
       <div class="header-right">
         <div class="title-badge" id="headerTitle">EVENT HARI INI</div>
         <div class="clock-badge" id="clock">00:00:00</div>
       </div>
     </div>
-
     <table id="eventTable">
       <thead>
         <tr>
@@ -199,8 +213,11 @@
     </table>
   </div>
 
-  <!-- Jam overlay pojok kanan bawah -->
-  <div id="clockOverlay">00:00:00</div>
+  <!-- Screensaver info -->
+  <div id="screensaverInfo">
+    <div id="screensaverText">EVENT HARI INI TELAH SELESAI</div>
+    <div id="clockOverlay">00:00:00</div>
+  </div>
 
   <!-- Notice Updating -->
   <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
@@ -223,90 +240,7 @@
     function showUpdatingNotice() {
       const notice = document.getElementById("updatingNotice");
       notice.classList.add("show");
-      setTimeout(() => {
-        notice.classList.remove("show");
-      }, 2500);
-    }
-
-    function normalizeTime(str) {
-      if (!str) return "";
-      let clean = str.replace(/[;:]/g, ".").trim();
-      let parts = clean.split("-").map(p => p.trim());
-
-      function formatPart(p) {
-        if (!p) return "";
-        // Hanya angka → tambahkan .00
-        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
-        // Format jam valid HH.MM
-        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
-          let [h, m] = p.split(".");
-          return h.padStart(2, "0") + "." + m.padStart(2, "0");
-        }
-        // Format jam valid HH.
-        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
-        // Kalau tidak valid → tampilkan apa adanya
-        return p;
-      }
-
-      if (parts.length === 2) {
-        return formatPart(parts[0]) + " - " + formatPart(parts[1]);
-      } else {
-        return formatPart(parts[0]);
-      }
-    }
-
-    async function loadCSV() {
-      try {
-        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
-        const text = await resp.text();
-        const rows = parseCSV(text);
-
-        // 🔹 A1 = Judul (bisa tanggal)
-        const customTitle = rows[0][0];
-        if (customTitle) {
-          const date = new Date(customTitle);
-          if (!isNaN(date)) {
-            const formatted = date.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric"
-            });
-            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
-          } else {
-            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
-          }
-        }
-
-        // 🔹 B1 = Status Ada/Tidak Ada Event
-        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
-
-        if (eventStatus !== lastStatus && lastStatus !== "") {
-          showUpdatingNotice();
-        }
-        lastStatus = eventStatus;
-
-        if (eventStatus === "tidak ada event") {
-          document.getElementById("mainStage").style.opacity = "0";
-          document.getElementById("bgNoEvent").classList.add("show");
-          document.getElementById("clockOverlay").classList.add("show");
-        } else {
-          document.getElementById("mainStage").style.opacity = "1";
-          document.getElementById("bgNoEvent").classList.remove("show");
-          document.getElementById("clockOverlay").classList.remove("show");
-        }
-
-        // 🔹 Data event mulai baris ke-3
-        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-        if (body.length > 0) {
-          lastData = body;
-          renderTable(lastData);
-        } else {
-          renderTable(lastData);
-        }
-      } catch (e) {
-        console.error("Fetch gagal, pakai data lama:", e);
-        renderTable(lastData);
-      }
+      setTimeout(() => notice.classList.remove("show"), 2500);
     }
 
     function parseCSV(text) {
@@ -316,29 +250,152 @@
       );
     }
 
+    function normalizeTime(str) {
+      if (!str) return "";
+      let clean = str.replace(/[;:]/g, ".").trim();
+      let parts = clean.split("-").map(p => p.trim());
+      function formatPart(p) {
+        if (!p) return "";
+        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
+        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
+          let [h, m] = p.split(".");
+          return h.padStart(2, "0") + "." + m.padStart(2, "0");
+        }
+        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
+        return p;
+      }
+      return (parts.length === 2)
+        ? formatPart(parts[0]) + " - " + formatPart(parts[1])
+        : formatPart(parts[0]);
+    }
+
+    function getLastEventEnd(data) {
+      if (data.length === 0) return null;
+      const lastTime = data[data.length - 1][0];
+      if (!lastTime) return null;
+      const parts = lastTime.replace(/[;:]/g, ".").split("-");
+      if (parts.length < 2) return null;
+      let end = parts[1].trim();
+      if (/^\d{1,2}$/.test(end)) end = end.padStart(2, "0") + ".00";
+      if (/^\d{1,2}\.$/.test(end)) end = end.replace(".", "") + ".00";
+      if (!/^\d{1,2}\.\d{1,2}$/.test(end)) return null;
+      const [h, m] = end.split(".");
+      return parseInt(h) * 60 + parseInt(m);
+    }
+
+    async function loadCSV() {
+      try {
+        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
+        const text = await resp.text();
+        const rows = parseCSV(text);
+
+        // Judul (A1)
+        const customTitle = rows[0][0];
+        let displayTitle = "EVENT HARI INI";
+        let eventDate = null;
+        if (customTitle) {
+          const date = new Date(customTitle);
+          if (!isNaN(date)) {
+            eventDate = date;
+            const formatted = date.toLocaleDateString("id-ID", {
+              day: "2-digit", month: "long", year: "numeric"
+            });
+            displayTitle = "EVENT " + formatted.toUpperCase();
+          } else {
+            displayTitle = customTitle.toUpperCase();
+          }
+        }
+        document.getElementById("headerTitle").textContent = displayTitle;
+
+        // Status (B1)
+        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
+        if (eventStatus !== lastStatus && lastStatus !== "") showUpdatingNotice();
+        lastStatus = eventStatus;
+
+        // Ambil isi tabel mulai baris 3
+        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+
+        // --- Screensaver logic ---
+        let screensaverMode = false;
+        let emptyTable = (body.length === 0);
+        if (eventStatus === "tidak ada event") {
+          document.getElementById("mainStage").style.opacity = "0";
+          document.getElementById("bgNoEvent").classList.add("show");
+          document.getElementById("bgScreensaver").classList.remove("show");
+          document.getElementById("screensaverInfo").classList.remove("show");
+        } else {
+          if (emptyTable) {
+            screensaverMode = true;
+          } else {
+            const endHM = getLastEventEnd(body);
+            const now = new Date();
+            const nowHM = now.getHours() * 60 + now.getMinutes();
+            if (endHM && eventDate) {
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+              if (today.getTime() === eventDay.getTime() && nowHM > endHM) screensaverMode = true;
+              if (today.getTime() > eventDay.getTime()) screensaverMode = true;
+            }
+          }
+
+          if (screensaverMode) {
+            document.getElementById("mainStage").style.opacity = "0";
+            document.getElementById("bgScreensaver").classList.add("show");
+            document.getElementById("bgNoEvent").classList.remove("show");
+            document.getElementById("screensaverInfo").classList.add("show");
+
+            let screensaverText = "";
+            if (emptyTable) {
+              screensaverText = "BELUM ADA EVENT UNTUK TANGGAL INI";
+            } else if (eventDate) {
+              const today = new Date();
+              const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              const eventOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+              if (todayOnly.getTime() === eventOnly.getTime()) {
+                screensaverText = displayTitle + " TELAH SELESAI";
+              } else if (todayOnly.getTime() > eventOnly.getTime()) {
+                screensaverText = "EVENT HARI INI SEGERA KAMI UPDATE";
+              } else {
+                screensaverText = "EVENT SEGERA KAMI UPDATE";
+              }
+            }
+            document.getElementById("screensaverText").textContent = screensaverText;
+          } else {
+            document.getElementById("mainStage").style.opacity = "1";
+            document.getElementById("bgNoEvent").classList.remove("show");
+            document.getElementById("bgScreensaver").classList.remove("show");
+            document.getElementById("screensaverInfo").classList.remove("show");
+          }
+        }
+
+        // --- Render table (selalu pakai cara normal) ---
+        if (body.length > 0) {
+          lastData = body;
+          renderTable(lastData);
+        } else {
+          renderTable(lastData);
+        }
+
+      } catch (e) {
+        console.error("Fetch gagal, pakai data lama:", e);
+        renderTable(lastData);
+      }
+    }
+
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
       const fragment = document.createDocumentFragment();
-
       data.forEach(([time, event, room]) => {
         const tr = document.createElement("tr");
-
         const tdTime = document.createElement("td");
         tdTime.textContent = normalizeTime(time);
-
         const tdEvent = document.createElement("td");
         tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
-
         const tdRoom = document.createElement("td");
         tdRoom.textContent = room || "";
-
-        tr.appendChild(tdTime);
-        tr.appendChild(tdEvent);
-        tr.appendChild(tdRoom);
-
+        tr.appendChild(tdTime); tr.appendChild(tdEvent); tr.appendChild(tdRoom);
         fragment.appendChild(tr);
       });
-
       tbody.replaceChildren(fragment);
     }
 
