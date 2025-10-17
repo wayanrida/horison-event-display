@@ -5,46 +5,218 @@
   <title>Horison Event Display</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html, body { margin: 0; height: 100%; background: #000; font-family: Arial, sans-serif; overflow: hidden; color: #fff; }
-    .bg-fixed { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; transition: opacity 0.8s ease; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    /* Background video & overlay */
+    .bg-fixed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
-    #bgNoEvent, #bgScreensaver { z-index: 10; opacity: 0; visibility: hidden; }
-    #bgNoEvent.show, #bgScreensaver.show { opacity: 1; visibility: visible; }
 
-    .stage { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; transition: opacity 0.8s ease; }
-    .header { width: 90%; margin-top: 28px; display: flex; justify-content: flex-end; transition: opacity 0.8s ease; }
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .title-badge { background: #333; padding: 10px 28px; border-radius: 32px; font-weight: 800; font-size: clamp(18px, 1.8vw, 28px); white-space: nowrap; }
-    .clock-badge { background: #c5aa72; color: #000; padding: 10px 22px; border-radius: 32px; font-weight: 800; font-size: clamp(16px, 1.8vw, 26px); white-space: nowrap; }
+    /* Background No Event */
+    #bgNoEvent {
+      z-index: 10;
+      opacity: 0;
+      visibility: hidden;
+    }
+    #bgNoEvent.show {
+      opacity: 1;
+      visibility: visible;
+    }
 
-    table { width: 90%; margin: 36px auto; border-collapse: separate; border-spacing: 12px 6px; transition: opacity 0.8s ease; }
-    th { background: #c5aa72; color: #000; padding: 14px; border-radius: 14px; font-size: clamp(18px, 1.6vw, 24px); font-weight: 800; text-align: center; }
-    td { background: #333; color: #fff; padding: 12px; border-radius: 14px; font-size: clamp(16px, 1.3vw, 22px); font-weight: 700; }
-    td:nth-child(1) { text-align: center; }
-    td:nth-child(2) { text-align: left; }
-    td:nth-child(3) { text-align: right; }
+    /* Screensaver */
+    #bgScreensaver {
+      z-index: 11;
+      opacity: 0;
+      visibility: hidden;
+    }
+    #bgScreensaver.show {
+      opacity: 1;
+      visibility: visible;
+    }
 
-    .event-text { display: inline-block; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(14px, 1.2vw, 22px); }
+    /* Konten utama */
+    .stage {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.8s ease;
+    }
 
-    #clockOverlay { position: fixed; bottom: 20px; right: 20px; background: #fff; color: #000; font-weight: 800; font-size: clamp(18px, 2vw, 28px); padding: 12px 28px; border-radius: 32px; z-index: 20; opacity: 0; visibility: hidden; transition: opacity 0.8s ease; }
-    #clockOverlay.show { opacity: 1; visibility: visible; }
+    /* Header */
+    .header {
+      width: 90%;
+      margin-top: 28px;
+      display: flex;
+      justify-content: flex-end;
+      transition: opacity 0.8s ease;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .title-badge {
+      background: #333;
+      padding: 10px 28px;
+      border-radius: 32px;
+      font-weight: 800;
+      font-size: clamp(18px, 1.8vw, 28px);
+      white-space: nowrap;
+    }
+    .clock-badge {
+      background: #c5aa72;
+      color: #000;
+      padding: 10px 22px;
+      border-radius: 32px;
+      font-weight: 800;
+      font-size: clamp(16px, 1.8vw, 26px);
+      white-space: nowrap;
+    }
 
-    #scrNotice { position: fixed; top: 20px; right: 20px; background: #fff; color: #000; padding: 12px 20px; border-radius: 24px; font-weight: 800; font-size: clamp(16px, 1.5vw, 22px); z-index: 20; opacity: 0; visibility: hidden; transition: opacity 0.8s ease; }
-    #scrNotice.show { opacity: 1; visibility: visible; }
+    /* Tabel */
+    table {
+      width: 90%;
+      margin: 36px auto;
+      border-collapse: separate;
+      border-spacing: 12px 6px;
+      transition: opacity 0.8s ease;
+    }
+    th {
+      background: #c5aa72;
+      color: #000;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: clamp(18px, 1.6vw, 24px);
+      font-weight: 800;
+      text-align: center;
+    }
+    td {
+      background: #333;
+      color: #fff;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: clamp(16px, 1.3vw, 22px);
+      font-weight: 700;
+    }
+
+    /* Alignment kolom */
+    td:nth-child(1) { text-align: center; } /* TIME rata tengah */
+    td:nth-child(2) { text-align: left; }   /* EVENT rata kiri */
+    td:nth-child(3) { text-align: right; }  /* ROOM rata kanan */
+
+    .event-text {
+      display: inline-block;
+      max-width: 60vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(14px, 1.2vw, 22px);
+    }
+
+    /* Jam overlay */
+    #clockOverlay {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(18px, 2vw, 28px);
+      padding: 12px 28px;
+      border-radius: 32px;
+      z-index: 20;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #clockOverlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Notice Updating */
+    #updatingNotice {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 20px 40px;
+      border-radius: 12px;
+      font-size: clamp(18px, 2vw, 32px);
+      font-weight: 800;
+      z-index: 30;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.6s ease;
+    }
+    #updatingNotice.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Screensaver Info */
+    #screensaverInfo {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 25;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #screensaverInfo.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .screensaver-badge {
+      background: #fff;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 32px;
+      font-weight: 800;
+      font-size: clamp(14px, 1.5vw, 22px);
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
-  <!-- Background video -->
+  <!-- Video background -->
   <video class="bg-fixed" id="bgMain" autoplay muted loop playsinline>
     <source src="VideoLooping.mp4" type="video/mp4">
   </video>
 
-  <!-- Overlay -->
+  <!-- PNG overlay -->
   <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
-  <!-- Background khusus -->
-  <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event">
+  <!-- Background khusus saat Tidak Ada Event -->
+  <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
+
+  <!-- Background Screensaver -->
   <img class="bg-fixed" id="bgScreensaver" src="screensaver.png" alt="Screensaver">
 
   <!-- Konten -->
@@ -55,63 +227,76 @@
         <div class="clock-badge" id="clock">00:00:00</div>
       </div>
     </div>
+
     <table id="eventTable">
       <thead>
-        <tr><th>TIME</th><th>EVENT</th><th>ROOM</th></tr>
+        <tr>
+          <th>TIME</th>
+          <th>EVENT</th>
+          <th>ROOM</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <!-- Overlay info -->
+  <!-- Jam overlay pojok kanan bawah -->
   <div id="clockOverlay">00:00:00</div>
-  <div id="scrNotice">EVENT TELAH SELESAI</div>
+
+  <!-- Notice Updating -->
+  <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
+
+  <!-- Screensaver Info -->
+  <div id="screensaverInfo">
+    <div class="screensaver-badge" id="screensaverMsg">EVENT SEGERA KAMI UPDATE</div>
+    <div class="screensaver-badge" id="screensaverClock">00:00:00</div>
+  </div>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
     let lastData = [];
-    let lastEndTime = null;
+    let lastStatus = "";
 
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
       document.getElementById("clock").textContent = timeStr;
       document.getElementById("clockOverlay").textContent = timeStr;
+      document.getElementById("screensaverClock").textContent = timeStr;
     }
-    setInterval(updateClock, 1000); updateClock();
+    updateClock();
+    setInterval(updateClock, 1000);
 
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      return lines.map(line =>
-        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
-      );
-    }
-
-    function parseTime(str) {
-      if (!str) return null;
-      str = str.replace(/[;:,\uFF0C]/g, ".").trim();
-      const [h, m] = str.split(".");
-      if (isNaN(h) || isNaN(m)) return null;
-      return parseInt(h) * 60 + parseInt(m);
+    function showUpdatingNotice() {
+      const notice = document.getElementById("updatingNotice");
+      notice.classList.add("show");
+      setTimeout(() => {
+        notice.classList.remove("show");
+      }, 2500);
     }
 
     function normalizeTime(str) {
       if (!str) return "";
-      let clean = str.replace(/[;:,\uFF0C]/g, ".").trim();
+      let clean = str.replace(/[;:,]/g, ".").trim();
       let parts = clean.split("-").map(p => p.trim());
-      function fmt(p) {
+
+      function formatPart(p) {
         if (!p) return "";
-        if (/^\d{1,2}$/.test(p)) return p.padStart(2,"0")+".00";
+        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
         if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
-          let [h,m] = p.split(".");
-          return h.padStart(2,"0")+"."+m.padStart(2,"0");
+          let [h, m] = p.split(".");
+          return h.padStart(2, "0") + "." + m.padStart(2, "0");
         }
-        if (/^\d{1,2}\.$/.test(p)) return p.replace(".","")+".00";
+        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
         return p;
       }
-      if (parts.length===2) return fmt(parts[0])+" - "+fmt(parts[1]);
-      return fmt(parts[0]);
+
+      if (parts.length === 2) {
+        return formatPart(parts[0]) + " - " + formatPart(parts[1]);
+      } else {
+        return formatPart(parts[0]);
+      }
     }
 
     async function loadCSV() {
@@ -120,79 +305,127 @@
         const text = await resp.text();
         const rows = parseCSV(text);
 
-        const customTitle = rows[0][0];
+        // 🔹 A1 = Judul (bisa tanggal)
+        const customTitle = rows[0][0];   // hanya A1
         if (customTitle) {
           const date = new Date(customTitle);
           if (!isNaN(date)) {
-            document.getElementById("headerTitle").textContent = "EVENT " +
-              date.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"}).toUpperCase();
+            const formatted = date.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric"
+            });
+            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
           } else {
             document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
           }
         }
 
+        // 🔹 B1 = Status Ada/Tidak Ada Event
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
-        const tbody = document.querySelector("#eventTable tbody");
-        tbody.innerHTML = "";
+
+        if (eventStatus !== lastStatus && lastStatus !== "") {
+          showUpdatingNotice();
+        }
+        lastStatus = eventStatus;
 
         if (eventStatus === "tidak ada event") {
           document.getElementById("mainStage").style.opacity = "0";
           document.getElementById("bgNoEvent").classList.add("show");
           document.getElementById("clockOverlay").classList.add("show");
           document.getElementById("bgScreensaver").classList.remove("show");
-          document.getElementById("scrNotice").classList.remove("show");
-          return;
+          document.getElementById("screensaverInfo").classList.remove("show");
         } else {
           document.getElementById("mainStage").style.opacity = "1";
           document.getElementById("bgNoEvent").classList.remove("show");
           document.getElementById("clockOverlay").classList.remove("show");
         }
 
-        const body = rows.slice(2).filter(r => (r[0]||r[1]||r[2]));
-        let maxEnd = null;
-        body.forEach(([time,event,room])=>{
-          const tr = document.createElement("tr");
-
-          const tdTime = document.createElement("td");
-          tdTime.textContent = normalizeTime(time);
-
-          const tdEvent = document.createElement("td");
-          tdEvent.innerHTML = `<span class="event-text">${(event||"").toUpperCase()}</span>`;
-
-          const tdRoom = document.createElement("td");
-          tdRoom.textContent = room||"";
-
-          tr.appendChild(tdTime); tr.appendChild(tdEvent); tr.appendChild(tdRoom);
-          tbody.appendChild(tr);
-
-          if (time && time.includes("-")) {
-            let endStr = time.split("-")[1].trim();
-            let endMin = parseTime(endStr);
-            if (endMin!==null) {
-              if (maxEnd===null || endMin>maxEnd) maxEnd=endMin;
-            }
-          }
-        });
-        lastEndTime = maxEnd;
-
-        checkScreensaver();
-      } catch(e){ console.error(e); }
+        // 🔹 Data event mulai baris ke-3
+        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+        if (body.length > 0) {
+          lastData = body;
+          renderTable(lastData);
+          checkScreensaver(lastData, customTitle);
+        } else {
+          renderTable([]);
+          showScreensaver("EVENT SEGERA KAMI UPDATE");
+        }
+      } catch (e) {
+        console.error("Fetch gagal, pakai data lama:", e);
+        renderTable(lastData);
+      }
     }
 
-    function checkScreensaver(){
-      const now = new Date();
-      const nowMin = now.getHours()*60 + now.getMinutes();
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map(line =>
+        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
+      );
+    }
 
-      if (lastEndTime!==null && nowMin>lastEndTime) {
-        document.getElementById("mainStage").style.opacity = "0";
-        document.getElementById("bgScreensaver").classList.add("show");
-        document.getElementById("scrNotice").textContent =
-          document.getElementById("headerTitle").textContent + " TELAH SELESAI";
-        document.getElementById("scrNotice").classList.add("show");
+    function renderTable(data) {
+      const tbody = document.querySelector("#eventTable tbody");
+      const fragment = document.createDocumentFragment();
+
+      data.forEach(([time, event, room]) => {
+        const tr = document.createElement("tr");
+
+        const tdTime = document.createElement("td");
+        tdTime.textContent = normalizeTime(time);
+
+        const tdEvent = document.createElement("td");
+        tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
+
+        const tdRoom = document.createElement("td");
+        tdRoom.textContent = room || "";
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdEvent);
+        tr.appendChild(tdRoom);
+
+        fragment.appendChild(tr);
+      });
+
+      tbody.replaceChildren(fragment);
+    }
+
+    function checkScreensaver(events, titleDate) {
+      const now = new Date();
+      let maxEnd = null;
+
+      events.forEach(([time]) => {
+        if (!time) return;
+        let parts = normalizeTime(time).split("-");
+        if (parts.length === 2) {
+          let [h, m] = parts[1].trim().split(".");
+          let end = new Date(titleDate);
+          end.setHours(parseInt(h), parseInt(m), 0, 0);
+          if (!maxEnd || end > maxEnd) maxEnd = end;
+        }
+      });
+
+      if (maxEnd && now > maxEnd) {
+        showScreensaver("EVENT " + new Date(titleDate).toLocaleDateString("id-ID", {
+          day: "2-digit", month: "long", year: "numeric"
+        }).toUpperCase() + " TELAH SELESAI");
       } else {
-        document.getElementById("bgScreensaver").classList.remove("show");
-        document.getElementById("scrNotice").classList.remove("show");
+        hideScreensaver();
       }
+    }
+
+    function showScreensaver(msg) {
+      document.getElementById("bgScreensaver").classList.add("show");
+      document.getElementById("screensaverInfo").classList.add("show");
+      document.getElementById("screensaverMsg").textContent = msg;
+      document.getElementById("mainStage").style.opacity = "0";
+      document.getElementById("bgNoEvent").classList.remove("show");
+      document.getElementById("clockOverlay").classList.remove("show");
+    }
+
+    function hideScreensaver() {
+      document.getElementById("bgScreensaver").classList.remove("show");
+      document.getElementById("screensaverInfo").classList.remove("show");
     }
 
     loadCSV();
