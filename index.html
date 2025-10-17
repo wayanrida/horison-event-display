@@ -157,6 +157,27 @@
       padding: 10px 24px;
     }
 
+    /* Jam untuk No Event (kanan bawah) */
+    #clockNoEvent {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(18px, 2vw, 28px);
+      padding: 10px 24px;
+      border-radius: 32px;
+      z-index: 22;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #clockNoEvent.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
     /* Notice Updating */
     #updatingNotice {
       position: fixed;
@@ -213,11 +234,14 @@
     </table>
   </div>
 
-  <!-- Screensaver info -->
+  <!-- Screensaver info (atas kanan) -->
   <div id="screensaverInfo">
     <div id="screensaverText">EVENT HARI INI TELAH SELESAI</div>
     <div id="clockOverlay">00:00:00</div>
   </div>
+
+  <!-- Jam khusus No Event (bawah kanan) -->
+  <div id="clockNoEvent">00:00:00</div>
 
   <!-- Notice Updating -->
   <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
@@ -233,6 +257,7 @@
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
       document.getElementById("clock").textContent = timeStr;
       document.getElementById("clockOverlay").textContent = timeStr;
+      document.getElementById("clockNoEvent").textContent = timeStr;
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -269,20 +294,6 @@
         : formatPart(parts[0]);
     }
 
-    function getLastEventEnd(data) {
-      if (data.length === 0) return null;
-      const lastTime = data[data.length - 1][0];
-      if (!lastTime) return null;
-      const parts = lastTime.replace(/[;:]/g, ".").split("-");
-      if (parts.length < 2) return null;
-      let end = parts[1].trim();
-      if (/^\d{1,2}$/.test(end)) end = end.padStart(2, "0") + ".00";
-      if (/^\d{1,2}\.$/.test(end)) end = end.replace(".", "") + ".00";
-      if (!/^\d{1,2}\.\d{1,2}$/.test(end)) return null;
-      const [h, m] = end.split(".");
-      return parseInt(h) * 60 + parseInt(m);
-    }
-
     async function loadCSV() {
       try {
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
@@ -292,14 +303,10 @@
         // Judul (A1)
         const customTitle = rows[0][0];
         let displayTitle = "EVENT HARI INI";
-        let eventDate = null;
         if (customTitle) {
           const date = new Date(customTitle);
           if (!isNaN(date)) {
-            eventDate = date;
-            const formatted = date.toLocaleDateString("id-ID", {
-              day: "2-digit", month: "long", year: "numeric"
-            });
+            const formatted = date.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
             displayTitle = "EVENT " + formatted.toUpperCase();
           } else {
             displayTitle = customTitle.toUpperCase();
@@ -312,72 +319,26 @@
         if (eventStatus !== lastStatus && lastStatus !== "") showUpdatingNotice();
         lastStatus = eventStatus;
 
-        // Ambil isi tabel mulai baris 3
         const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
 
-        // --- Screensaver logic ---
-        let screensaverMode = false;
-        let emptyTable = (body.length === 0);
         if (eventStatus === "tidak ada event") {
           document.getElementById("mainStage").style.opacity = "0";
           document.getElementById("bgNoEvent").classList.add("show");
           document.getElementById("bgScreensaver").classList.remove("show");
           document.getElementById("screensaverInfo").classList.remove("show");
+          document.getElementById("clockNoEvent").classList.add("show"); // ✅ jam bawah kanan ON
         } else {
-          if (emptyTable) {
-            screensaverMode = true;
-          } else {
-            const endHM = getLastEventEnd(body);
-            const now = new Date();
-            const nowHM = now.getHours() * 60 + now.getMinutes();
-            if (endHM && eventDate) {
-              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-              if (today.getTime() === eventDay.getTime() && nowHM > endHM) screensaverMode = true;
-              if (today.getTime() > eventDay.getTime()) screensaverMode = true;
-            }
-          }
-
-          if (screensaverMode) {
-            document.getElementById("mainStage").style.opacity = "0";
-            document.getElementById("bgScreensaver").classList.add("show");
-            document.getElementById("bgNoEvent").classList.remove("show");
-            document.getElementById("screensaverInfo").classList.add("show");
-
-            let screensaverText = "";
-            if (emptyTable) {
-              screensaverText = "BELUM ADA EVENT UNTUK TANGGAL INI";
-            } else if (eventDate) {
-              const today = new Date();
-              const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-              const eventOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-              if (todayOnly.getTime() === eventOnly.getTime()) {
-                screensaverText = displayTitle + " TELAH SELESAI";
-              } else if (todayOnly.getTime() > eventOnly.getTime()) {
-                screensaverText = "EVENT HARI INI SEGERA KAMI UPDATE";
-              } else {
-                screensaverText = "EVENT SEGERA KAMI UPDATE";
-              }
-            }
-            document.getElementById("screensaverText").textContent = screensaverText;
-          } else {
-            document.getElementById("mainStage").style.opacity = "1";
-            document.getElementById("bgNoEvent").classList.remove("show");
-            document.getElementById("bgScreensaver").classList.remove("show");
-            document.getElementById("screensaverInfo").classList.remove("show");
-          }
+          document.getElementById("mainStage").style.opacity = "1";
+          document.getElementById("bgNoEvent").classList.remove("show");
+          document.getElementById("bgScreensaver").classList.remove("show");
+          document.getElementById("screensaverInfo").classList.remove("show");
+          document.getElementById("clockNoEvent").classList.remove("show"); // ✅ reset jam bawah kanan
         }
 
-        // --- Render table (selalu pakai cara normal) ---
-        if (body.length > 0) {
-          lastData = body;
-          renderTable(lastData);
-        } else {
-          renderTable(lastData);
-        }
-
+        // Render tabel event
+        renderTable(body);
       } catch (e) {
-        console.error("Fetch gagal, pakai data lama:", e);
+        console.error("Fetch gagal:", e);
         renderTable(lastData);
       }
     }
