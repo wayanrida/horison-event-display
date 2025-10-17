@@ -24,7 +24,6 @@
       pointer-events: none;
       transition: opacity 0.8s ease;
     }
-
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
 
@@ -35,10 +34,7 @@
       visibility: hidden;
       transition: opacity 0.8s ease;
     }
-    #bgNoEvent.show {
-      opacity: 1;
-      visibility: visible;
-    }
+    #bgNoEvent.show { opacity: 1; visibility: visible; }
 
     /* Screensaver */
     #bgScreensaver {
@@ -47,10 +43,7 @@
       visibility: hidden;
       transition: opacity 1.2s ease;
     }
-    #bgScreensaver.show {
-      opacity: 1;
-      visibility: visible;
-    }
+    #bgScreensaver.show { opacity: 1; visibility: visible; }
 
     /* Konten utama */
     .stage {
@@ -143,10 +136,7 @@
       visibility: hidden;
       transition: opacity 1.2s ease;
     }
-    #screensaverInfo.show {
-      opacity: 1;
-      visibility: visible;
-    }
+    #screensaverInfo.show { opacity: 1; visibility: visible; }
 
     #screensaverText,
     #clockOverlay {
@@ -173,10 +163,7 @@
       visibility: hidden;
       transition: opacity 0.8s ease;
     }
-    #clockNoEvent.show {
-      opacity: 1;
-      visibility: visible;
-    }
+    #clockNoEvent.show { opacity: 1; visibility: visible; }
 
     /* Notice Updating */
     #updatingNotice {
@@ -195,10 +182,7 @@
       visibility: hidden;
       transition: opacity 0.6s ease;
     }
-    #updatingNotice.show {
-      opacity: 1;
-      visibility: visible;
-    }
+    #updatingNotice.show { opacity: 1; visibility: visible; }
   </style>
 </head>
 <body>
@@ -340,6 +324,7 @@
         // --- Screensaver logic ---
         let screensaverMode = false;
         let emptyTable = (body.length === 0);
+
         if (eventStatus === "tidak ada event") {
           document.getElementById("mainStage").style.opacity = "0";
           document.getElementById("bgNoEvent").classList.add("show");
@@ -347,17 +332,23 @@
           document.getElementById("screensaverInfo").classList.remove("show");
           document.getElementById("clockNoEvent").classList.add("show");
         } else {
-          if (emptyTable) {
-            screensaverMode = true;
-          } else {
-            const endHM = getLastEventEnd(body);
+          if (eventDate) {
             const now = new Date();
-            const nowHM = now.getHours() * 60 + now.getMinutes();
-            if (endHM && eventDate) {
-              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-              if (today.getTime() === eventDay.getTime() && nowHM > endHM) screensaverMode = true;
-              if (today.getTime() > eventDay.getTime()) screensaverMode = true;
+            const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const eventOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+            if (todayOnly.getTime() < eventOnly.getTime()) {
+              // Event besok / masa depan
+              screensaverMode = true;
+            } else if (todayOnly.getTime() > eventOnly.getTime()) {
+              // Event sudah lewat
+              screensaverMode = true;
+            } else {
+              // Event hari ini
+              const endHM = getLastEventEnd(body);
+              const nowHM = now.getHours() * 60 + now.getMinutes();
+              if (endHM && nowHM > endHM) screensaverMode = true;
+              if (emptyTable) screensaverMode = true;
             }
           }
 
@@ -371,9 +362,9 @@
             let screensaverText = "";
             if (emptyTable) {
               screensaverText = "BELUM ADA EVENT UNTUK TANGGAL INI";
-            } else if (eventDate) {
-              const today = new Date();
-              const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            } else {
+              const now = new Date();
+              const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               const eventOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
               if (todayOnly.getTime() === eventOnly.getTime()) {
                 screensaverText = displayTitle + " TELAH SELESAI";
