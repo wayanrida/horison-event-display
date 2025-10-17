@@ -24,7 +24,6 @@
       pointer-events: none;
       transition: opacity 0.8s ease;
     }
-
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
 
@@ -35,17 +34,6 @@
       visibility: hidden;
     }
     #bgNoEvent.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* Screensaver */
-    #bgScreensaver {
-      z-index: 11;
-      opacity: 0;
-      visibility: hidden;
-    }
-    #bgScreensaver.show {
       opacity: 1;
       visibility: visible;
     }
@@ -133,7 +121,7 @@
       font-size: clamp(14px, 1.2vw, 22px);
     }
 
-    /* Jam overlay */
+    /* Jam overlay (saat no event) */
     #clockOverlay {
       position: fixed;
       bottom: 20px;
@@ -175,33 +163,6 @@
       opacity: 1;
       visibility: visible;
     }
-
-    /* Screensaver Info */
-    #screensaverInfo {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 25;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease;
-    }
-    #screensaverInfo.show {
-      opacity: 1;
-      visibility: visible;
-    }
-    .screensaver-badge {
-      background: #fff;
-      color: #000;
-      padding: 10px 20px;
-      border-radius: 32px;
-      font-weight: 800;
-      font-size: clamp(14px, 1.5vw, 22px);
-      white-space: nowrap;
-    }
   </style>
 </head>
 <body>
@@ -215,9 +176,6 @@
 
   <!-- Background khusus saat Tidak Ada Event -->
   <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
-
-  <!-- Background Screensaver -->
-  <img class="bg-fixed" id="bgScreensaver" src="screensaver.png" alt="Screensaver">
 
   <!-- Konten -->
   <div class="stage" id="mainStage">
@@ -246,12 +204,6 @@
   <!-- Notice Updating -->
   <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
 
-  <!-- Screensaver Info -->
-  <div id="screensaverInfo">
-    <div class="screensaver-badge" id="screensaverMsg">EVENT SEGERA KAMI UPDATE</div>
-    <div class="screensaver-badge" id="screensaverClock">00:00:00</div>
-  </div>
-
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
@@ -263,7 +215,6 @@
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
       document.getElementById("clock").textContent = timeStr;
       document.getElementById("clockOverlay").textContent = timeStr;
-      document.getElementById("screensaverClock").textContent = timeStr;
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -278,7 +229,7 @@
 
     function normalizeTime(str) {
       if (!str) return "";
-      let clean = str.replace(/[;:,]/g, ".").trim();
+      let clean = str.replace(/[;,]/g, ".").replace(/:/g, ".").trim();
       let parts = clean.split("-").map(p => p.trim());
 
       function formatPart(p) {
@@ -323,7 +274,6 @@
 
         // 🔹 B1 = Status Ada/Tidak Ada Event
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
-
         if (eventStatus !== lastStatus && lastStatus !== "") {
           showUpdatingNotice();
         }
@@ -333,23 +283,22 @@
           document.getElementById("mainStage").style.opacity = "0";
           document.getElementById("bgNoEvent").classList.add("show");
           document.getElementById("clockOverlay").classList.add("show");
-          document.getElementById("bgScreensaver").classList.remove("show");
-          document.getElementById("screensaverInfo").classList.remove("show");
         } else {
           document.getElementById("mainStage").style.opacity = "1";
           document.getElementById("bgNoEvent").classList.remove("show");
           document.getElementById("clockOverlay").classList.remove("show");
         }
 
-        // 🔹 Data event mulai baris ke-3
-        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+        // 🔹 Data event mulai baris ke-3, hanya ambil kolom A–C
+        const body = rows.slice(2)
+          .map(r => [r[0] || "", r[1] || "", r[2] || ""])
+          .filter(r => (r[0] || r[1] || r[2]));
+
         if (body.length > 0) {
           lastData = body;
           renderTable(lastData);
-          checkScreensaver(lastData, customTitle);
         } else {
-          renderTable([]);
-          showScreensaver("EVENT SEGERA KAMI UPDATE");
+          renderTable(lastData);
         }
       } catch (e) {
         console.error("Fetch gagal, pakai data lama:", e);
@@ -388,44 +337,6 @@
       });
 
       tbody.replaceChildren(fragment);
-    }
-
-    function checkScreensaver(events, titleDate) {
-      const now = new Date();
-      let maxEnd = null;
-
-      events.forEach(([time]) => {
-        if (!time) return;
-        let parts = normalizeTime(time).split("-");
-        if (parts.length === 2) {
-          let [h, m] = parts[1].trim().split(".");
-          let end = new Date(titleDate);
-          end.setHours(parseInt(h), parseInt(m), 0, 0);
-          if (!maxEnd || end > maxEnd) maxEnd = end;
-        }
-      });
-
-      if (maxEnd && now > maxEnd) {
-        showScreensaver("EVENT " + new Date(titleDate).toLocaleDateString("id-ID", {
-          day: "2-digit", month: "long", year: "numeric"
-        }).toUpperCase() + " TELAH SELESAI");
-      } else {
-        hideScreensaver();
-      }
-    }
-
-    function showScreensaver(msg) {
-      document.getElementById("bgScreensaver").classList.add("show");
-      document.getElementById("screensaverInfo").classList.add("show");
-      document.getElementById("screensaverMsg").textContent = msg;
-      document.getElementById("mainStage").style.opacity = "0";
-      document.getElementById("bgNoEvent").classList.remove("show");
-      document.getElementById("clockOverlay").classList.remove("show");
-    }
-
-    function hideScreensaver() {
-      document.getElementById("bgScreensaver").classList.remove("show");
-      document.getElementById("screensaverInfo").classList.remove("show");
     }
 
     loadCSV();
