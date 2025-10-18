@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Horison Event Display - Demo Layout</title>
+  <title>Horison Event Display - Demo Layout Fix</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body {
@@ -73,7 +73,7 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      table-layout: fixed; /* proporsi dijaga */
+      table-layout: fixed; /* menjaga proporsi */
     }
 
     th {
@@ -81,9 +81,9 @@
       color: #000;
       font-weight: 800;
       font-size: clamp(18px, 1.6vw, 24px);
-      text-align: center; /* Header rata tengah semua */
       padding: 14px;
       border-radius: 14px;
+      text-align: center; /* default header rata tengah */
     }
 
     td {
@@ -93,15 +93,19 @@
       font-weight: 700;
       padding: 12px;
       border-radius: 14px;
-      white-space: normal;      /* bisa multiline */
+      white-space: normal;      /* multiline */
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
-    /* Proporsi kolom */
-    th:nth-child(1), td:nth-child(1) { width: 15%; text-align: center; }
-    th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
-    th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
+    /* Proporsi & alignment */
+    th:nth-child(1) { width: 15%; text-align: center; }
+    th:nth-child(2) { width: 60%; text-align: center; } /* EVENT header tengah */
+    th:nth-child(3) { width: 25%; text-align: center; } /* ROOM header tengah */
+
+    td:nth-child(1) { width: 15%; text-align: center; }
+    td:nth-child(2) { width: 60%; text-align: left; }
+    td:nth-child(3) { width: 25%; text-align: right; }
   </style>
 </head>
 <body>
