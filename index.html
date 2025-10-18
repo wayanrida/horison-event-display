@@ -24,15 +24,27 @@
       pointer-events: none;
       transition: opacity 0.8s ease;
     }
-
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
-    #bgNoEvent, #bgScreensaver {
+
+    /* Background No Event */
+    #bgNoEvent {
       z-index: 10;
       opacity: 0;
       visibility: hidden;
     }
-    #bgNoEvent.show, #bgScreensaver.show {
+    #bgNoEvent.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Screensaver */
+    #bgScreensaver {
+      z-index: 11;
+      opacity: 0;
+      visibility: hidden;
+    }
+    #bgScreensaver.show {
       opacity: 1;
       visibility: visible;
     }
@@ -94,50 +106,128 @@
       border-radius: 14px;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
     th {
       background: #c5aa72;
       color: #000;
       font-size: clamp(18px, 1.6vw, 24px);
       font-weight: 800;
-      text-align: center; /* Header rata tengah */
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Header rata tengah */
     }
     td {
       background: #333;
       color: #fff;
     }
 
-    /* Proporsi kolom */
-    th:nth-child(1), td:nth-child(1) { width: 18%; text-align: center; } /* TIME */
-    th:nth-child(2), td:nth-child(2) { width: 52%; text-align: left; }   /* EVENT */
-    th:nth-child(3), td:nth-child(3) { width: 30%; text-align: right; }  /* ROOM */
+    /* Kolom multiline */
+    td:nth-child(1) {
+      width: 18%;
+      text-align: center;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
+    td:nth-child(2) {
+      width: 52%;
+      text-align: left;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
+    td:nth-child(3) {
+      width: 30%;
+      text-align: right;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
 
-    .event-text {
-      display: inline-block;
-      max-width: 50vw;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    /* Jam overlay */
+    #clockOverlay {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(18px, 2vw, 28px);
+      padding: 12px 28px;
+      border-radius: 32px;
+      z-index: 20;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #clockOverlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Screensaver Info (kanan atas) */
+    #screenInfo {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(16px, 1.5vw, 24px);
+      padding: 12px 20px;
+      border-radius: 24px;
+      z-index: 21;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.8s ease;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    #screenInfo.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Notice Updating */
+    #updatingNotice {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 20px 40px;
+      border-radius: 12px;
+      font-size: clamp(18px, 2vw, 32px);
+      font-weight: 800;
+      z-index: 30;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.6s ease;
+    }
+    #updatingNotice.show {
+      opacity: 1;
+      visibility: visible;
     }
   </style>
 </head>
 <body>
-  <!-- Background video -->
+  <!-- Video background -->
   <video class="bg-fixed" id="bgMain" autoplay muted loop playsinline>
     <source src="VideoLooping.mp4" type="video/mp4">
   </video>
 
-  <!-- Overlay PNG -->
+  <!-- PNG overlay -->
   <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
-  <!-- Background khusus -->
+  <!-- Background khusus saat Tidak Ada Event -->
   <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
-  <img class="bg-fixed" id="bgScreensaver" src="screensaver.png" alt="Screensaver">
 
-  <!-- Konten utama -->
+  <!-- Screensaver -->
+  <img class="bg-fixed" id="bgScreensaver" src="screensaver_1920x1080.png" alt="Screensaver">
+
+  <!-- Konten -->
   <div class="stage" id="mainStage">
     <div class="header" id="headerTitleBox">
       <div class="header-right">
@@ -158,29 +248,42 @@
     </table>
   </div>
 
+  <!-- Jam overlay pojok kanan bawah -->
+  <div id="clockOverlay">00:00:00</div>
+
+  <!-- Screensaver Info -->
+  <div id="screenInfo"></div>
+
+  <!-- Notice Updating -->
+  <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
+
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
+    let lastData = [];
+    let lastStatus = "";
 
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
       document.getElementById("clock").textContent = timeStr;
+      document.getElementById("clockOverlay").textContent = timeStr;
     }
+    updateClock();
     setInterval(updateClock, 1000);
 
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      return lines.map(line =>
-        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
-      );
+    function showUpdatingNotice() {
+      const notice = document.getElementById("updatingNotice");
+      notice.classList.add("show");
+      setTimeout(() => notice.classList.remove("show"), 2500);
     }
 
     function normalizeTime(str) {
       if (!str) return "";
-      let clean = str.replace(/[,;:]/g, ".").trim();
+      let clean = str.replace(/[;:,]/g, ".").trim();
+      clean = clean.replace(/\s*-\s*/g, "-"); 
       let parts = clean.split("-").map(p => p.trim());
-      function fmt(p) {
+      function formatPart(p) {
         if (!p) return "";
         if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
         if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
@@ -190,56 +293,115 @@
         if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
         return p;
       }
-      return parts.length === 2 ? fmt(parts[0]) + " - " + fmt(parts[1]) : fmt(parts[0]);
+      if (parts.length === 2) return formatPart(parts[0]) + " - " + formatPart(parts[1]);
+      else return formatPart(parts[0]);
     }
 
     async function loadCSV() {
       try {
-        const resp = await fetch(CSV_URL + "&_ts=" + Date.now());
+        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
         const text = await resp.text();
         const rows = parseCSV(text);
 
-        // Judul
         const customTitle = rows[0][0];
         if (customTitle) {
           const date = new Date(customTitle);
           if (!isNaN(date)) {
-            const formatted = date.toLocaleDateString("en-GB", { day:"2-digit", month:"long", year:"numeric"});
-            document.getElementById("headerTitle").textContent = "EVENT " + formatted.toUpperCase();
+            const formatted = date.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
           } else {
             document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
           }
         }
 
-        // Data mulai baris 3
-        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-        renderTable(body);
+        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
+        if (eventStatus !== lastStatus && lastStatus !== "") showUpdatingNotice();
+        lastStatus = eventStatus;
+
+        const today = new Date();
+        const todayStr = today.toLocaleDateString("en-GB");
+        const selectedDate = new Date(rows[0][0]);
+        let body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+
+        let lastEndTime = null;
+        if (body.length > 0) {
+          body.forEach(([time]) => {
+            const range = normalizeTime(time).split("-");
+            if (range[1]) {
+              const [h, m] = range[1].trim().split(".");
+              const end = new Date(selectedDate);
+              end.setHours(parseInt(h), parseInt(m || "0"));
+              if (!lastEndTime || end > lastEndTime) lastEndTime = end;
+            }
+          });
+        }
+
+        if (eventStatus === "tidak ada event") {
+          document.getElementById("mainStage").style.opacity = "0";
+          document.getElementById("bgNoEvent").classList.add("show");
+          document.getElementById("bgScreensaver").classList.remove("show");
+          document.getElementById("clockOverlay").classList.add("show");
+          document.getElementById("screenInfo").classList.remove("show");
+        } else if (body.length === 0) {
+          document.getElementById("mainStage").style.opacity = "0";
+          document.getElementById("bgNoEvent").classList.add("show");
+          document.getElementById("bgScreensaver").classList.remove("show");
+          document.getElementById("clockOverlay").classList.add("show");
+          document.getElementById("screenInfo").classList.remove("show");
+        } else if (selectedDate.toDateString() < today.toDateString() || (lastEndTime && today > lastEndTime)) {
+          document.getElementById("mainStage").style.opacity = "0";
+          document.getElementById("bgNoEvent").classList.remove("show");
+          document.getElementById("bgScreensaver").classList.add("show");
+          document.getElementById("clockOverlay").classList.remove("show");
+          const infoBox = document.getElementById("screenInfo");
+          infoBox.textContent = "EVENT HARI INI SEGERA KAMI UPDATE • " + today.toLocaleTimeString("id-ID", { hour12: false });
+          infoBox.classList.add("show");
+        } else {
+          lastData = body;
+          document.getElementById("mainStage").style.opacity = "1";
+          document.getElementById("bgNoEvent").classList.remove("show");
+          document.getElementById("bgScreensaver").classList.remove("show");
+          document.getElementById("clockOverlay").classList.remove("show");
+          document.getElementById("screenInfo").classList.remove("show");
+          renderTable(lastData);
+        }
       } catch (e) {
         console.error("Fetch gagal:", e);
+        renderTable(lastData);
       }
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map(line =>
+        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
+      );
     }
 
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
-      tbody.innerHTML = "";
+      const fragment = document.createDocumentFragment();
       data.forEach(([time, event, room]) => {
         const tr = document.createElement("tr");
         const tdTime = document.createElement("td");
         tdTime.textContent = normalizeTime(time);
-
         const tdEvent = document.createElement("td");
-        tdEvent.innerHTML = `<span class="event-text">${(event||"").toUpperCase()}</span>`;
-
+        tdEvent.textContent = (event || "").toUpperCase();
         const tdRoom = document.createElement("td");
         tdRoom.textContent = room || "";
-
-        tr.append(tdTime, tdEvent, tdRoom);
-        tbody.appendChild(tr);
+        tr.appendChild(tdTime);
+        tr.appendChild(tdEvent);
+        tr.appendChild(tdRoom);
+        fragment.appendChild(tr);
       });
+      tbody.replaceChildren(fragment);
     }
 
     loadCSV();
     setInterval(loadCSV, REFRESH_MS);
+
+    // Backup reload 30 menit
+    setInterval(() => location.reload(), 1000 * 60 * 30);
   </script>
 </body>
 </html>
