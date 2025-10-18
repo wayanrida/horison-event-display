@@ -122,91 +122,22 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-
-    /* Jam overlay pojok */
-    #clockOverlay {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #fff;
-      color: #000;
-      font-weight: 800;
-      font-size: clamp(18px, 2vw, 28px);
-      padding: 12px 28px;
-      border-radius: 32px;
-      z-index: 20;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease;
-    }
-    #clockOverlay.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* Notice Updating */
-    #updatingNotice {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 20px 40px;
-      border-radius: 12px;
-      font-size: clamp(18px, 2vw, 32px);
-      font-weight: 800;
-      z-index: 30;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.6s ease;
-    }
-    #updatingNotice.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* Screensaver Info */
-    #screensaverInfo {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #fff;
-      color: #000;
-      font-weight: 800;
-      font-size: clamp(14px, 1.4vw, 22px);
-      padding: 10px 20px;
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 25;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease;
-    }
-    #screensaverInfo.show {
-      opacity: 1;
-      visibility: visible;
-    }
   </style>
 </head>
 <body>
-  <!-- Video background -->
+  <!-- Background video -->
   <video class="bg-fixed" id="bgMain" autoplay muted loop playsinline>
     <source src="VideoLooping.mp4" type="video/mp4">
   </video>
 
-  <!-- PNG overlay -->
+  <!-- Overlay PNG -->
   <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
-  <!-- Background khusus saat Tidak Ada Event -->
+  <!-- Background khusus -->
   <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
-
-  <!-- Background Screensaver -->
   <img class="bg-fixed" id="bgScreensaver" src="screensaver.png" alt="Screensaver">
 
-  <!-- Konten -->
+  <!-- Konten utama -->
   <div class="stage" id="mainStage">
     <div class="header" id="headerTitleBox">
       <div class="header-right">
@@ -227,33 +158,88 @@
     </table>
   </div>
 
-  <!-- Jam overlay pojok kanan bawah -->
-  <div id="clockOverlay">00:00:00</div>
-
-  <!-- Notice Updating -->
-  <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
-
-  <!-- Screensaver Info -->
-  <div id="screensaverInfo">
-    <span id="screensaverText">EVENT SEGERA KAMI UPDATE</span>
-    <span id="screensaverClock">00:00:00</span>
-  </div>
-
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
     const REFRESH_MS = 5000;
-    let lastData = [];
-    let lastStatus = "";
 
     function updateClock() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
       document.getElementById("clock").textContent = timeStr;
-      document.getElementById("clockOverlay").textContent = timeStr;
-      document.getElementById("screensaverClock").textContent = timeStr;
     }
-    updateClock();
     setInterval(updateClock, 1000);
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map(line =>
+        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
+      );
+    }
+
+    function normalizeTime(str) {
+      if (!str) return "";
+      let clean = str.replace(/[,;:]/g, ".").trim();
+      let parts = clean.split("-").map(p => p.trim());
+      function fmt(p) {
+        if (!p) return "";
+        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
+        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
+          let [h, m] = p.split(".");
+          return h.padStart(2, "0") + "." + m.padStart(2, "0");
+        }
+        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
+        return p;
+      }
+      return parts.length === 2 ? fmt(parts[0]) + " - " + fmt(parts[1]) : fmt(parts[0]);
+    }
+
+    async function loadCSV() {
+      try {
+        const resp = await fetch(CSV_URL + "&_ts=" + Date.now());
+        const text = await resp.text();
+        const rows = parseCSV(text);
+
+        // Judul
+        const customTitle = rows[0][0];
+        if (customTitle) {
+          const date = new Date(customTitle);
+          if (!isNaN(date)) {
+            const formatted = date.toLocaleDateString("en-GB", { day:"2-digit", month:"long", year:"numeric"});
+            document.getElementById("headerTitle").textContent = "EVENT " + formatted.toUpperCase();
+          } else {
+            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
+          }
+        }
+
+        // Data mulai baris 3
+        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
+        renderTable(body);
+      } catch (e) {
+        console.error("Fetch gagal:", e);
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector("#eventTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(([time, event, room]) => {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");
+        tdTime.textContent = normalizeTime(time);
+
+        const tdEvent = document.createElement("td");
+        tdEvent.innerHTML = `<span class="event-text">${(event||"").toUpperCase()}</span>`;
+
+        const tdRoom = document.createElement("td");
+        tdRoom.textContent = room || "";
+
+        tr.append(tdTime, tdEvent, tdRoom);
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadCSV();
+    setInterval(loadCSV, REFRESH_MS);
   </script>
 </body>
 </html>
