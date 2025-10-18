@@ -37,7 +37,7 @@
       align-items: center;
     }
 
-    /* Header */
+    /* Header atas */
     .header {
       width: 90%;
       margin-top: 28px;
@@ -73,7 +73,7 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      table-layout: fixed; /* menjaga proporsi */
+      table-layout: fixed; /* proporsi fix */
     }
 
     th {
@@ -83,7 +83,7 @@
       font-size: clamp(18px, 1.6vw, 24px);
       padding: 14px;
       border-radius: 14px;
-      text-align: center; /* default header rata tengah */
+      text-align: center;
     }
 
     td {
@@ -93,19 +93,25 @@
       font-weight: 700;
       padding: 12px;
       border-radius: 14px;
-      white-space: normal;      /* multiline */
+      white-space: normal; 
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
-    /* Proporsi & alignment */
-    th:nth-child(1) { width: 15%; text-align: center; }
-    th:nth-child(2) { width: 60%; text-align: center; } /* EVENT header tengah */
-    th:nth-child(3) { width: 25%; text-align: center; } /* ROOM header tengah */
+    /* Proporsi & alignment isi */
+    th:nth-child(1), td:nth-child(1) { width: 15%; }
+    th:nth-child(2), td:nth-child(2) { width: 57%; }
+    th:nth-child(3), td:nth-child(3) { width: 28%; }
 
-    td:nth-child(1) { width: 15%; text-align: center; }
-    td:nth-child(2) { width: 60%; text-align: left; }
-    td:nth-child(3) { width: 25%; text-align: right; }
+    td:nth-child(1) { text-align: center; }
+    td:nth-child(2) { text-align: left; }
+    td:nth-child(3) { text-align: right; }
+
+    /* Paksa header EVENT & ROOM rata tengah */
+    thead th:nth-child(2),
+    thead th:nth-child(3) {
+      text-align: center !important;
+    }
   </style>
 </head>
 <body>
