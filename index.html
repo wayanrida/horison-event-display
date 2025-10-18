@@ -146,6 +146,15 @@
       text-align: right;
     }
 
+    /* Time auto shrink, baseline lebih besar */
+    .time-text {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      font-size: clamp(14px, 1.4vw, 24px);
+      text-align: center;
+    }
+
     /* Jam overlay */
     #clockOverlay {
       position: fixed;
@@ -369,7 +378,7 @@
         const tr = document.createElement("tr");
 
         const tdTime = document.createElement("td");
-        tdTime.textContent = normalizeTime(time);
+        tdTime.innerHTML = `<span class="time-text">${normalizeTime(time)}</span>`;
 
         const tdEvent = document.createElement("td");
         tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
