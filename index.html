@@ -24,6 +24,7 @@
       pointer-events: none;
       transition: opacity 0.8s ease;
     }
+
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
 
@@ -87,39 +88,43 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      table-layout: fixed;
       transition: opacity 0.8s ease;
     }
-    th {
-      background: #c5aa72;
-      color: #000;
+    th, td {
       padding: 14px;
-      border-radius: 14px;
-      font-size: clamp(18px, 1.6vw, 24px);
-      font-weight: 800;
-    }
-    td {
-      background: #333;
-      color: #fff;
-      padding: 12px;
       border-radius: 14px;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
+    }
+
+    th {
+      background: #c5aa72;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(18px, 1.6vw, 24px);
+      text-align: center; /* Header rata tengah semua */
+    }
+
+    /* Set lebar kolom */
+    th:nth-child(1), td:nth-child(1) { width: 15%; text-align: center; }
+    th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
+    th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
+
+    td {
+      background: #333;
+      color: #fff;
       word-wrap: break-word;
       white-space: normal;
     }
 
-    /* Header rata tengah */
-    th:nth-child(1),
-    th:nth-child(2),
-    th:nth-child(3) {
-      text-align: center !important;
+    .event-text {
+      display: inline-block;
+      max-width: 58vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(14px, 1.2vw, 22px);
     }
-
-    /* Isi tabel */
-    td:nth-child(1) { width: 15%; text-align: center; } /* TIME */
-    td:nth-child(2) { width: 60%; text-align: left; }   /* EVENT */
-    td:nth-child(3) { width: 25%; text-align: right; }  /* ROOM */
 
     /* Jam overlay */
     #clockOverlay {
@@ -229,7 +234,7 @@
 
     function normalizeTime(str) {
       if (!str) return "";
-      let clean = str.replace(/[;,:]/g, ".").trim();
+      let clean = str.replace(/[;:,]/g, ".").trim();
       let parts = clean.split("-").map(p => p.trim());
 
       function formatPart(p) {
@@ -272,6 +277,7 @@
         }
 
         const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
+
         if (eventStatus !== lastStatus && lastStatus !== "") {
           showUpdatingNotice();
         }
@@ -318,7 +324,7 @@
         tdTime.textContent = normalizeTime(time);
 
         const tdEvent = document.createElement("td");
-        tdEvent.textContent = (event || "").toUpperCase();
+        tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
 
         const tdRoom = document.createElement("td");
         tdRoom.textContent = room || "";
