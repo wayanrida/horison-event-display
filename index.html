@@ -114,16 +114,16 @@
     th:nth-child(2), td:nth-child(2) { width: 57%; text-align: left; }
     th:nth-child(3), td:nth-child(3) { width: 30%; text-align: right; }
 
+    /* Event multiline */
     .event-text {
-      display: inline-block;
+      display: block;
       max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      word-wrap: break-word;
       font-size: clamp(14px, 1.2vw, 22px);
     }
 
-    /* Room agar tetap satu baris */
+    /* Room tetap satu baris */
     .room-text {
       display: block;
       white-space: nowrap;
@@ -297,7 +297,6 @@
           lastData = body;
           renderTable(lastData);
 
-          // Cari jam event terakhir
           body.forEach(([time]) => {
             const range = normalizeTime(time).split("-");
             if (range.length === 2) {
