@@ -97,7 +97,6 @@
       border-radius: 14px;
       font-size: clamp(18px, 1.6vw, 24px);
       font-weight: 800;
-      text-align: center; /* semua header rata tengah */
     }
     td {
       background: #333;
@@ -110,10 +109,17 @@
       white-space: normal;
     }
 
-    /* Lebar kolom */
-    th:nth-child(1), td:nth-child(1) { width: 15%; text-align: center; }
-    th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
-    th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
+    /* Header rata tengah */
+    th:nth-child(1),
+    th:nth-child(2),
+    th:nth-child(3) {
+      text-align: center !important;
+    }
+
+    /* Isi tabel */
+    td:nth-child(1) { width: 15%; text-align: center; } /* TIME */
+    td:nth-child(2) { width: 60%; text-align: left; }   /* EVENT */
+    td:nth-child(3) { width: 25%; text-align: right; }  /* ROOM */
 
     /* Jam overlay */
     #clockOverlay {
