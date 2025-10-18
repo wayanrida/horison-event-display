@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Horison Event Display - Demo Layout Fix</title>
+  <title>Horison Event Display - Demo Layout Room One Line</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body {
@@ -93,19 +93,24 @@
       font-weight: 700;
       padding: 12px;
       border-radius: 14px;
-      white-space: normal; 
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
     /* Proporsi & alignment isi */
-    th:nth-child(1), td:nth-child(1) { width: 15%; }
-    th:nth-child(2), td:nth-child(2) { width: 57%; }
-    th:nth-child(3), td:nth-child(3) { width: 28%; }
+    th:nth-child(1) { width: 15%; text-align: center; }
+    th:nth-child(2) { width: 57%; text-align: center; }
+    th:nth-child(3) { width: 28%; text-align: center; }
 
     td:nth-child(1) { text-align: center; }
-    td:nth-child(2) { text-align: left; }
-    td:nth-child(3) { text-align: right; }
+    td:nth-child(2) { text-align: left; white-space: normal; }
+    td:nth-child(3) { 
+      text-align: right;
+      white-space: nowrap;           /* cegah baris baru */
+      overflow: hidden;
+      text-overflow: ellipsis;       /* kalau kepanjangan → … */
+      font-size: clamp(12px, 1.2vw, 22px); /* mengecil otomatis */
+    }
 
     /* Paksa header EVENT & ROOM rata tengah */
     thead th:nth-child(2),
@@ -150,7 +155,7 @@
         <tr>
           <td>19.00 - 23.00</td>
           <td>MALAM ANUGERAH PENGHARGAAN HOTEL HORISON LAMPUNG 2025</td>
-          <td>SERUIT – LANTAI 1</td>
+          <td>SERUIT – LANTAI 1 SANGAT PANJANG BANGET SAMPAI MENTOK BIAR TEST</td>
         </tr>
       </tbody>
     </table>
