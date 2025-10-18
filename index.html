@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Horison Event Display</title>
+  <title>Horison Event Display - Demo Layout</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body {
@@ -14,7 +14,7 @@
       color: #fff;
     }
 
-    /* Background video & overlay */
+    /* Background */
     .bg-fixed {
       position: fixed;
       inset: 0;
@@ -22,21 +22,11 @@
       height: 100%;
       object-fit: cover;
       pointer-events: none;
-      transition: opacity 0.8s ease;
     }
     #bgMain { z-index: 0; }
     .overlay { z-index: 1; }
-    #bgNoEvent {
-      z-index: 10;
-      opacity: 0;
-      visibility: hidden;
-    }
-    #bgNoEvent.show {
-      opacity: 1;
-      visibility: visible;
-    }
 
-    /* Konten utama */
+    /* Konten */
     .stage {
       position: relative;
       z-index: 2;
@@ -45,7 +35,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: opacity 0.8s ease;
     }
 
     /* Header */
@@ -84,85 +73,52 @@
       margin: 36px auto;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      table-layout: fixed; /* menjaga proporsi kolom */
+      table-layout: fixed; /* proporsi dijaga */
     }
-    th, td {
-      padding: 14px;
-      border-radius: 14px;
-      font-size: clamp(16px, 1.3vw, 22px);
-      font-weight: 700;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
+
     th {
       background: #c5aa72;
       color: #000;
       font-weight: 800;
       font-size: clamp(18px, 1.6vw, 24px);
-      text-align: center; /* header semua rata tengah */
+      text-align: center; /* Header rata tengah semua */
+      padding: 14px;
+      border-radius: 14px;
+    }
+
+    td {
+      background: #333;
+      color: #fff;
+      font-size: clamp(16px, 1.3vw, 22px);
+      font-weight: 700;
+      padding: 12px;
+      border-radius: 14px;
+      white-space: normal;      /* bisa multiline */
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     /* Proporsi kolom */
     th:nth-child(1), td:nth-child(1) { width: 15%; text-align: center; }
     th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
     th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
-
-    td {
-      background: #333;
-      color: #fff;
-      white-space: normal; /* agar teks panjang bisa wrap */
-    }
-
-    .event-text {
-      display: inline-block;
-      max-width: 100%;
-      white-space: normal;
-    }
-
-    /* Jam overlay */
-    #clockOverlay {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #fff;
-      color: #000;
-      font-weight: 800;
-      font-size: clamp(18px, 2vw, 28px);
-      padding: 12px 28px;
-      border-radius: 32px;
-      z-index: 20;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.8s ease;
-    }
-    #clockOverlay.show {
-      opacity: 1;
-      visibility: visible;
-    }
   </style>
 </head>
 <body>
-  <!-- Video background -->
-  <video class="bg-fixed" id="bgMain" autoplay muted loop playsinline>
-    <source src="VideoLooping.mp4" type="video/mp4">
-  </video>
-
-  <!-- PNG overlay -->
+  <!-- Background demo -->
+  <img class="bg-fixed" id="bgMain" src="background-1920x1080.png" alt="Background">
   <img class="bg-fixed overlay" src="overlay.png" alt="Overlay">
 
-  <!-- Background khusus saat Tidak Ada Event -->
-  <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
-
   <!-- Konten -->
-  <div class="stage" id="mainStage">
-    <div class="header" id="headerTitleBox">
+  <div class="stage">
+    <div class="header">
       <div class="header-right">
-        <div class="title-badge" id="headerTitle">EVENT HARI INI</div>
-        <div class="clock-badge" id="clock">00:00:00</div>
+        <div class="title-badge">EVENT 18 OKTOBER 2025</div>
+        <div class="clock-badge">12:45:00</div>
       </div>
     </div>
 
-    <table id="eventTable">
+    <table>
       <thead>
         <tr>
           <th>TIME</th>
@@ -170,123 +126,24 @@
           <th>ROOM</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td>07.00 - 12.00</td>
+          <td>RAPAT KOORDINASI INTERNAL MANAGEMENT</td>
+          <td>GRANDBALLROOM – LANTAI 1</td>
+        </tr>
+        <tr>
+          <td>13.30 - 17.30</td>
+          <td>WORKSHOP KEWIRAUSAHAAN DAN PENGEMBANGAN BISNIS UNTUK GENERASI MUDA</td>
+          <td>DRAGON 2 – LANTAI 2</td>
+        </tr>
+        <tr>
+          <td>19.00 - 23.00</td>
+          <td>MALAM ANUGERAH PENGHARGAAN HOTEL HORISON LAMPUNG 2025</td>
+          <td>SERUIT – LANTAI 1</td>
+        </tr>
+      </tbody>
     </table>
   </div>
-
-  <!-- Jam overlay pojok kanan bawah -->
-  <div id="clockOverlay">00:00:00</div>
-
-  <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
-    const REFRESH_MS = 5000;
-    let lastData = [];
-
-    function updateClock() {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString("id-ID", { hour12: false });
-      document.getElementById("clock").textContent = timeStr;
-      document.getElementById("clockOverlay").textContent = timeStr;
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    function normalizeTime(str) {
-      if (!str) return "";
-      let clean = str.replace(/[;:,]/g, ".").trim();
-      let parts = clean.split("-").map(p => p.trim());
-      function formatPart(p) {
-        if (!p) return "";
-        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
-        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
-          let [h, m] = p.split(".");
-          return h.padStart(2, "0") + "." + m.padStart(2, "0");
-        }
-        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
-        return p;
-      }
-      if (parts.length === 2) {
-        return formatPart(parts[0]) + " - " + formatPart(parts[1]);
-      } else {
-        return formatPart(parts[0]);
-      }
-    }
-
-    async function loadCSV() {
-      try {
-        const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
-        const text = await resp.text();
-        const rows = parseCSV(text);
-
-        const customTitle = rows[0][0];
-        if (customTitle) {
-          const date = new Date(customTitle);
-          if (!isNaN(date)) {
-            const formatted = date.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric"
-            });
-            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
-          } else {
-            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
-          }
-        }
-
-        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
-        if (eventStatus === "tidak ada event") {
-          document.getElementById("mainStage").style.opacity = "0";
-          document.getElementById("bgNoEvent").classList.add("show");
-          document.getElementById("clockOverlay").classList.add("show");
-        } else {
-          document.getElementById("mainStage").style.opacity = "1";
-          document.getElementById("bgNoEvent").classList.remove("show");
-          document.getElementById("clockOverlay").classList.remove("show");
-        }
-
-        const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-        if (body.length > 0) {
-          lastData = body;
-          renderTable(lastData);
-        } else {
-          renderTable(lastData);
-        }
-      } catch (e) {
-        console.error("Fetch gagal:", e);
-        renderTable(lastData);
-      }
-    }
-
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      return lines.map(line =>
-        line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, "").trim())
-      );
-    }
-
-    function renderTable(data) {
-      const tbody = document.querySelector("#eventTable tbody");
-      const fragment = document.createDocumentFragment();
-
-      data.forEach(([time, event, room]) => {
-        const tr = document.createElement("tr");
-        const tdTime = document.createElement("td");
-        tdTime.textContent = normalizeTime(time);
-        const tdEvent = document.createElement("td");
-        tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
-        const tdRoom = document.createElement("td");
-        tdRoom.textContent = room || "";
-        tr.appendChild(tdTime);
-        tr.appendChild(tdEvent);
-        tr.appendChild(tdRoom);
-        fragment.appendChild(tr);
-      });
-
-      tbody.replaceChildren(fragment);
-    }
-
-    loadCSV();
-    setInterval(loadCSV, REFRESH_MS);
-  </script>
 </body>
 </html>
