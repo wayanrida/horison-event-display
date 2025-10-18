@@ -28,12 +28,12 @@
     .overlay { z-index: 1; }
 
     /* Background No Event */
-    #bgNoEvent, #bgScreensaver {
+    #bgNoEvent {
       z-index: 10;
       opacity: 0;
       visibility: hidden;
     }
-    #bgNoEvent.show, #bgScreensaver.show {
+    #bgNoEvent.show {
       opacity: 1;
       visibility: visible;
     }
@@ -56,7 +56,6 @@
       margin-top: 28px;
       display: flex;
       justify-content: flex-end;
-      transition: opacity 0.8s ease;
     }
     .header-right {
       display: flex;
@@ -81,13 +80,18 @@
       white-space: nowrap;
     }
 
-    /* Tabel */
-    table {
+    /* Viewport tabel (scroll area) */
+    .table-viewport {
       width: 90%;
-      margin: 36px auto;
+      margin: 36px auto 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    table {
+      width: 100%;
       border-collapse: separate;
       border-spacing: 12px 6px;
-      table-layout: fixed;
     }
     th {
       background: #c5aa72;
@@ -96,7 +100,7 @@
       border-radius: 14px;
       font-size: clamp(18px, 1.6vw, 24px);
       font-weight: 800;
-      text-align: center !important;
+      text-align: center;
     }
     td {
       background: #333;
@@ -105,34 +109,32 @@
       border-radius: 14px;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 700;
-      word-wrap: break-word;
-      white-space: normal;
     }
 
-    /* Kolom proporsi */
+    /* Proporsi kolom */
     th:nth-child(1), td:nth-child(1) { width: 13%; text-align: center; }
     th:nth-child(2), td:nth-child(2) { width: 57%; text-align: left; }
     th:nth-child(3), td:nth-child(3) { width: 30%; text-align: right; }
 
-    /* Event multiline */
-    .event-text {
-      display: block;
-      max-width: 100%;
+    /* Multiline rules */
+    td:nth-child(2), td:nth-child(3) {
       white-space: normal;
-      word-wrap: break-word;
-      font-size: clamp(14px, 1.2vw, 22px);
+      word-break: break-word;
     }
 
-    /* Room tetap satu baris */
-    .room-text {
-      display: block;
+    /* Room auto-resize agar tetap 1 baris */
+    td:nth-child(3) {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: clamp(14px, 1vw, 20px);
+    }
+    td:nth-child(3) span {
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
     }
 
-    /* Jam overlay untuk No Event & Screensaver */
+    /* Clock overlay */
     #clockOverlay {
       position: fixed;
       bottom: 20px;
@@ -152,28 +154,6 @@
       opacity: 1;
       visibility: visible;
     }
-
-    /* Notice Updating */
-    #updatingNotice {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 20px 40px;
-      border-radius: 12px;
-      font-size: clamp(18px, 2vw, 32px);
-      font-weight: 800;
-      z-index: 30;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.6s ease;
-    }
-    #updatingNotice.show {
-      opacity: 1;
-      visibility: visible;
-    }
   </style>
 </head>
 <body>
@@ -188,41 +168,43 @@
   <!-- Background khusus saat Tidak Ada Event -->
   <img class="bg-fixed" id="bgNoEvent" src="background-noevent.png" alt="No Event Background">
 
-  <!-- Background Screensaver -->
-  <img class="bg-fixed" id="bgScreensaver" src="screensaver_1920x1080.png" alt="Screensaver">
-
   <!-- Konten -->
   <div class="stage" id="mainStage">
-    <div class="header" id="headerTitleBox">
+    <div class="header">
       <div class="header-right">
         <div class="title-badge" id="headerTitle">EVENT HARI INI</div>
         <div class="clock-badge" id="clock">00:00:00</div>
       </div>
     </div>
 
-    <table id="eventTable">
-      <thead>
-        <tr>
-          <th>TIME</th>
-          <th>EVENT</th>
-          <th>ROOM</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="tableViewport" class="table-viewport">
+      <table id="eventTable">
+        <thead>
+          <tr>
+            <th>TIME</th>
+            <th>EVENT</th>
+            <th>ROOM</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Jam overlay pojok kanan bawah -->
   <div id="clockOverlay">00:00:00</div>
 
-  <!-- Notice Updating -->
-  <div id="updatingNotice">DATA EVENT SEDANG DI UPDATE...</div>
-
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7JWjVeETxcC1epq9wg5oLA8C-BT7iNTCW6mAHfKjMNWe0LI_Ns2srMwOFsdBQE_bIYwKqq7xVoMLU/pub?gid=974824918&single=true&output=csv";
-    const REFRESH_MS = 5000; 
+    const REFRESH_MS = 5000;
+    const BACKUP_REFRESH_MS = 30 * 60 * 1000; // 30 menit backup refresh
     let lastData = [];
-    let lastStatus = "";
+    let scrollTimer = null;
+    let isScrollingEnabled = false;
+
+    const VISIBLE_ROWS = 7;
+    const SCROLL_STEP = 0.7;
+    const SCROLL_INTERVAL_MS = 20;
 
     function updateClock() {
       const now = new Date();
@@ -233,106 +215,15 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    function showUpdatingNotice() {
-      const notice = document.getElementById("updatingNotice");
-      notice.classList.add("show");
-      setTimeout(() => {
-        notice.classList.remove("show");
-      }, 2500);
-    }
-
-    function normalizeTime(str) {
-      if (!str) return "";
-      let clean = str.replace(/[,;:]/g, ".").trim();
-      let parts = clean.split("-").map(p => p.trim());
-      function formatPart(p) {
-        if (!p) return "";
-        if (/^\d{1,2}$/.test(p)) return p.padStart(2, "0") + ".00";
-        if (/^\d{1,2}\.\d{1,2}$/.test(p)) {
-          let [h, m] = p.split(".");
-          return h.padStart(2, "0") + "." + m.padStart(2, "0");
-        }
-        if (/^\d{1,2}\.$/.test(p)) return p.replace(".", "") + ".00";
-        return p;
-      }
-      if (parts.length === 2) {
-        return formatPart(parts[0]) + " - " + formatPart(parts[1]);
-      } else {
-        return formatPart(parts[0]);
-      }
-    }
-
     async function loadCSV() {
       try {
         const resp = await fetch(CSV_URL + "&_ts=" + Date.now(), { cache: "no-store" });
         const text = await resp.text();
         const rows = parseCSV(text);
-
-        const customTitle = rows[0][0];
-        if (customTitle) {
-          const date = new Date(customTitle);
-          if (!isNaN(date)) {
-            const formatted = date.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric"
-            });
-            document.getElementById("headerTitle").textContent = ("EVENT " + formatted).toUpperCase();
-          } else {
-            document.getElementById("headerTitle").textContent = customTitle.toUpperCase();
-          }
-        }
-
-        const eventStatus = (rows[0][1] || "Ada Event").toLowerCase();
-        if (eventStatus !== lastStatus && lastStatus !== "") {
-          showUpdatingNotice();
-        }
-        lastStatus = eventStatus;
-
-        const today = new Date();
-        let lastEventEnd = null;
         const body = rows.slice(2).filter(r => (r[0] || r[1] || r[2]));
-
-        if (body.length > 0) {
-          lastData = body;
-          renderTable(lastData);
-
-          body.forEach(([time]) => {
-            const range = normalizeTime(time).split("-");
-            if (range.length === 2) {
-              let end = range[1].trim().replace(".", ":");
-              let [h, m] = end.split(":").map(Number);
-              let eventEnd = new Date(today);
-              eventEnd.setHours(h, m || 0, 0, 0);
-              if (!lastEventEnd || eventEnd > lastEventEnd) {
-                lastEventEnd = eventEnd;
-              }
-            }
-          });
-        } else {
-          renderTable(lastData);
-        }
-
-        const now = new Date();
-
-        if (eventStatus === "tidak ada event") {
-          document.getElementById("mainStage").style.opacity = "0";
-          document.getElementById("bgNoEvent").classList.add("show");
-          document.getElementById("bgScreensaver").classList.remove("show");
-          document.getElementById("clockOverlay").classList.add("show");
-        } else if (lastEventEnd && now > lastEventEnd) {
-          document.getElementById("mainStage").style.opacity = "0";
-          document.getElementById("bgScreensaver").classList.add("show");
-          document.getElementById("bgNoEvent").classList.remove("show");
-          document.getElementById("clockOverlay").classList.add("show");
-        } else {
-          document.getElementById("mainStage").style.opacity = "1";
-          document.getElementById("bgNoEvent").classList.remove("show");
-          document.getElementById("bgScreensaver").classList.remove("show");
-          document.getElementById("clockOverlay").classList.remove("show");
-        }
+        lastData = body;
+        renderTable(lastData);
       } catch (e) {
-        console.error("Fetch gagal, pakai data lama:", e);
         renderTable(lastData);
       }
     }
@@ -347,36 +238,75 @@
     function renderTable(data) {
       const tbody = document.querySelector("#eventTable tbody");
       const fragment = document.createDocumentFragment();
-
       data.forEach(([time, event, room]) => {
         const tr = document.createElement("tr");
 
         const tdTime = document.createElement("td");
-        tdTime.textContent = normalizeTime(time);
+        tdTime.textContent = time;
 
         const tdEvent = document.createElement("td");
-        tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
+        tdEvent.textContent = (event || "").toUpperCase();
 
         const tdRoom = document.createElement("td");
-        tdRoom.innerHTML = `<span class="room-text">${room || ""}</span>`;
+        tdRoom.innerHTML = `<span>${room || ""}</span>`;
 
         tr.appendChild(tdTime);
         tr.appendChild(tdEvent);
         tr.appendChild(tdRoom);
-
         fragment.appendChild(tr);
       });
-
       tbody.replaceChildren(fragment);
+      setupAutoScroll();
+    }
+
+    function setupAutoScroll() {
+      const viewport = document.getElementById('tableViewport');
+      const tbody = document.querySelector("#eventTable tbody");
+      const rows = Array.from(tbody.children);
+
+      stopAutoScroll();
+      if (rows.length === 0) return;
+
+      const rowHeight = rows[0].getBoundingClientRect().height || 48;
+      viewport.style.height = Math.round(rowHeight * VISIBLE_ROWS) + 'px';
+
+      if (rows.length <= VISIBLE_ROWS) {
+        isScrollingEnabled = false;
+        viewport.scrollTop = 0;
+        return;
+      }
+
+      const cloneFrag = document.createDocumentFragment();
+      rows.forEach(r => cloneFrag.appendChild(r.cloneNode(true)));
+      tbody.appendChild(cloneFrag);
+
+      isScrollingEnabled = true;
+      startAutoScroll();
+    }
+
+    function startAutoScroll() {
+      const viewport = document.getElementById('tableViewport');
+      const tbody = document.querySelector("#eventTable tbody");
+      if (!isScrollingEnabled || scrollTimer) return;
+      const halfHeight = Math.floor(tbody.scrollHeight / 2);
+      scrollTimer = setInterval(() => {
+        viewport.scrollTop += SCROLL_STEP;
+        if (viewport.scrollTop >= halfHeight) {
+          viewport.scrollTop = 0;
+        }
+      }, SCROLL_INTERVAL_MS);
+    }
+
+    function stopAutoScroll() {
+      if (scrollTimer) {
+        clearInterval(scrollTimer);
+        scrollTimer = null;
+      }
     }
 
     loadCSV();
     setInterval(loadCSV, REFRESH_MS);
-
-    // 🔄 Backup reload 30 menit sekali
-    setInterval(() => {
-      location.reload();
-    }, 30 * 60 * 1000);
+    setInterval(() => location.reload(), BACKUP_REFRESH_MS);
   </script>
 </body>
 </html>
