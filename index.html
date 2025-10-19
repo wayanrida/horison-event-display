@@ -333,16 +333,18 @@
           const sheetDay = new Date(sheetDate.getFullYear(), sheetDate.getMonth(), sheetDate.getDate());
 
           if (sheetDay < today) {
+            // A1 sudah lewat
             document.getElementById("mainStage").style.opacity = "0";
             document.getElementById("bgScreensaver").classList.add("show");
             document.getElementById("screensaverHeader").style.display = "flex";
             document.getElementById("screensaverTitle").textContent = "EVENT SEGERA DI UPDATE";
           } else if (sheetDay.getTime() === tomorrow.getTime() && now.getHours() >= 0 && now.getMinutes() >= 1) {
-            // Event besok otomatis aktif mulai 00:01
+            // Event besok mulai 00:01
             document.getElementById("mainStage").style.opacity = "1";
             document.getElementById("bgScreensaver").classList.remove("show");
             document.getElementById("screensaverHeader").style.display = "none";
-          } else {
+          } else if (sheetDay.getTime() === today.getTime()) {
+            // Hari ini → cek jam event terakhir
             let lastEnd = null;
             body.forEach(([time]) => {
               const range = normalizeTime(time).split("-");
@@ -354,12 +356,15 @@
                 if (!lastEnd || d > lastEnd) lastEnd = d;
               }
             });
-            if (lastEnd && now > lastEnd && sheetDay.getTime() === today.getTime()) {
+            if (lastEnd && now > lastEnd) {
+              // Semua event hari ini selesai
               document.getElementById("mainStage").style.opacity = "0";
               document.getElementById("bgScreensaver").classList.add("show");
               document.getElementById("screensaverHeader").style.display = "flex";
-              document.getElementById("screensaverTitle").textContent = "EVENT SEGERA DI UPDATE";
+              const formatted = sheetDate.toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" });
+              document.getElementById("screensaverTitle").textContent = ("EVENT " + formatted + " TELAH SELESAI").toUpperCase();
             } else {
+              // Masih ada event hari ini
               document.getElementById("mainStage").style.opacity = "1";
               document.getElementById("bgScreensaver").classList.remove("show");
               document.getElementById("screensaverHeader").style.display = "none";
