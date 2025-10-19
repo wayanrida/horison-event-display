@@ -149,7 +149,7 @@
       right: 20px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 20px; /* jarak antar badge */
       z-index: 20;
       opacity: 0;
       visibility: hidden;
@@ -167,6 +167,7 @@
       padding: 10px 22px;
       border-radius: 32px;
       white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* shadow biar jelas terpisah */
     }
   </style>
 </head>
@@ -295,7 +296,7 @@
       if (eventStatus === "tidak ada event") {
         // No event manual
         showScreensaver = true;
-        badgeText = "EVENT HARI INI SEGERA DI UPDATE";
+        badgeText = "EVENT SEGERA DI UPDATE";
       } else if (sheetDate) {
         const diffDays = (sheetDate - today) / (1000*60*60*24);
 
@@ -311,10 +312,14 @@
         } else if (diffDays < 0) {
           // Kemarin atau lebih lama
           showScreensaver = true;
-          badgeText = "EVENT HARI INI SEGERA DI UPDATE";
+          badgeText = "EVENT SEGERA DI UPDATE";
         } else if (diffDays === 1 && now.getHours() >= 0 && now.getMinutes() >= 1) {
           // Besok, mulai jam 00:01
           showScreensaver = false;
+        } else if (diffDays === 1 && now.getHours() < 0 && now.getMinutes() < 1) {
+          // Besok tapi masih hari ini
+          showScreensaver = true;
+          badgeText = "EVENT SEGERA DI UPDATE";
         }
       }
 
