@@ -111,8 +111,8 @@
 
     /* Proporsi kolom */
     td:nth-child(1), th:nth-child(1) { width: 13%; text-align: center; }
-    td:nth-child(2), th:nth-child(2) { width: 57%; text-align: left; }
-    td:nth-child(3), th:nth-child(3) { width: 30%; text-align: right; }
+    td:nth-child(2), th:nth-child(2) { width: 57%; text-align: center; }
+    td:nth-child(3), th:nth-child(3) { width: 30%; text-align: center; }
 
     /* Event multiline */
     .event-text {
@@ -121,6 +121,7 @@
       white-space: normal;
       font-size: clamp(15px, 1.4vw, 26px);
       line-height: 1.3em;
+      text-align: left;
     }
 
     /* Room single line shrink */
@@ -130,8 +131,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       font-size: clamp(14px, 1.4vw, 24px);
-    }
-    td.room-cell {
       text-align: right;
     }
 
@@ -140,19 +139,14 @@
       display: block;
       white-space: nowrap;
       font-size: clamp(14px, 1.4vw, 24px);
+      text-align: center;
     }
 
-    /* Badge screensaver */
-    #screensaverBadge {
+    /* Screensaver badge group */
+    #screensaverBadgeBox {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #fff;
-      color: #000;
-      font-weight: 800;
-      font-size: clamp(16px, 1.8vw, 26px);
-      padding: 10px 22px;
-      border-radius: 32px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -161,9 +155,18 @@
       visibility: hidden;
       transition: opacity 0.8s ease;
     }
-    #screensaverBadge.show {
+    #screensaverBadgeBox.show {
       opacity: 1;
       visibility: visible;
+    }
+    .screensaver-badge {
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: clamp(16px, 1.8vw, 26px);
+      padding: 10px 22px;
+      border-radius: 32px;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -200,10 +203,10 @@
     </table>
   </div>
 
-  <!-- Badge screensaver -->
-  <div id="screensaverBadge">
-    <span id="screensaverText">TEXT</span>
-    <span id="screensaverClock">00:00:00</span>
+  <!-- Screensaver badges -->
+  <div id="screensaverBadgeBox">
+    <div class="screensaver-badge" id="screensaverText">TEXT</div>
+    <div class="screensaver-badge" id="screensaverClock">00:00:00</div>
   </div>
 
   <script>
@@ -276,7 +279,7 @@
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const sheetDate = customTitle ? new Date(customTitle) : null;
       const screensaver = document.getElementById("bgScreensaver");
-      const badge = document.getElementById("screensaverBadge");
+      const badgeBox = document.getElementById("screensaverBadgeBox");
       const stage = document.getElementById("mainStage");
       let showScreensaver = false;
       let badgeText = "";
@@ -318,12 +321,12 @@
       if (showScreensaver) {
         stage.style.opacity = "0";
         screensaver.classList.add("show");
-        badge.classList.add("show");
+        badgeBox.classList.add("show");
         document.getElementById("screensaverText").textContent = badgeText;
       } else {
         stage.style.opacity = "1";
         screensaver.classList.remove("show");
-        badge.classList.remove("show");
+        badgeBox.classList.remove("show");
         renderTable(data);
       }
     }
@@ -342,7 +345,6 @@
         tdEvent.innerHTML = `<span class="event-text">${(event || "").toUpperCase()}</span>`;
 
         const tdRoom = document.createElement("td");
-        tdRoom.classList.add("room-cell");
         tdRoom.innerHTML = `<span class="room-text">${room || ""}</span>`;
 
         tr.appendChild(tdTime);
